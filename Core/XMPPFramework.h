@@ -162,6 +162,7 @@
 #import "XMPPMessageCoreDataStorage.h"
 #import "XMPPMessageCoreDataStorageObject.h"
 #import "XMPPMessageCoreDataStorageObject+Protected.h"
+#import "XMPPMessageCoreDataStorageObject+ContextHelpers.h"
 #import "XMPPMessageContextCoreDataStorageObject.h"
 #import "XMPPMessageContextCoreDataStorageObject+Protected.h"
 #import "XMPPMessageContextItemCoreDataStorageObject.h"
