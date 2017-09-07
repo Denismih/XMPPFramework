@@ -1,9 +1,8 @@
-#import "XMPPMessageBaseNode.h"
+#import "XMPPMessageCoreDataStorageObject.h"
+#import "XMPPMessageCoreDataStorageObject+Protected.h"
 #import "XMPPJID.h"
-#import "XMPPMessage.h"
-#import "NSManagedObject+XMPPCoreDataStorage.h"
 
-@interface XMPPMessageBaseNode ()
+@interface XMPPMessageCoreDataStorageObject ()
 
 @property (nonatomic, copy, nullable) NSString *fromDomain;
 @property (nonatomic, copy, nullable) NSString *fromResource;
@@ -12,9 +11,11 @@
 @property (nonatomic, copy, nullable) NSString *toResource;
 @property (nonatomic, copy, nullable) NSString *toUser;
 
+@property (nonatomic, copy, nullable) NSSet<XMPPMessageContextCoreDataStorageObject *> *contextElements;
+
 @end
 
-@interface XMPPMessageBaseNode (CoreDataGeneratedPrimitiveAccessors)
+@interface XMPPMessageCoreDataStorageObject (CoreDataGeneratedPrimitiveAccessors)
 
 - (XMPPJID *)primitiveFromJID;
 - (void)setPrimitiveFromJID:(XMPPJID *)value;
@@ -30,9 +31,9 @@
 
 @end
 
-@implementation XMPPMessageBaseNode
+@implementation XMPPMessageCoreDataStorageObject
 
-@dynamic fromDomain, fromResource, fromUser, toDomain, toResource, toUser, body, stanzaID, subject, thread, type;
+@dynamic fromDomain, fromResource, fromUser, toDomain, toResource, toUser, body, stanzaID, subject, thread, direction, type, contextElements;
 
 #pragma mark - fromJID transient property
 

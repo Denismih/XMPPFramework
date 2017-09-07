@@ -160,8 +160,12 @@
 #import "XMPPRoomLightCoreDataStorageProtected.h"
 #import "XMPPRoomLightMessageCoreDataStorageObject.h"
 #import "XMPPMessageCoreDataStorage.h"
-#import "XMPPMessageBaseNode.h"
-#import "XMPPMessageContextNode.h"
+#import "XMPPMessageCoreDataStorageObject.h"
+#import "XMPPMessageCoreDataStorageObject+Protected.h"
+#import "XMPPMessageContextCoreDataStorageObject.h"
+#import "XMPPMessageContextCoreDataStorageObject+Protected.h"
+#import "XMPPMessageContextItemCoreDataStorageObject.h"
+#import "XMPPMessageContextItemCoreDataStorageObject+Protected.h"
 
 FOUNDATION_EXPORT double XMPPFrameworkVersionNumber;
 FOUNDATION_EXPORT const unsigned char XMPPFrameworkVersionString[];
