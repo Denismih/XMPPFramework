@@ -2,7 +2,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class XMPPJID;
+@class XMPPJID, XMPPMessage;
 
 typedef NS_ENUM(int16_t, XMPPMessageDirection) {
     /// A value indicating that the message's origin is not defined.
@@ -58,6 +58,28 @@ typedef NS_ENUM(int16_t, XMPPMessageType) {
 
 /// The value of "type" attribute.
 @property (nonatomic, assign) XMPPMessageType type;
+
+/// @brief Returns the XML representation of the message including only the core RFC 3921/6121 properties.
+/// @discussion Applications employing store-then-send approach to messaging can use this method to obtain the seed of an outgoing message stanza they later decorate with extension-derived values.
+- (XMPPMessage *)coreMessage;
+
+/**
+ Records a unique outgoing XMPP stream element event ID for the message.
+ 
+ After recording the ID, the application should use the @c sendElement:registeringEventWithID:andGetReceipt: method to send the message, providing the recorded value.
+ This way, modules will be able to track the message in their stream callbacks and update the storage accordingly.
+ 
+ This method will trigger an assertion unless invoked on an outgoing message. It will also trigger an assertion if called more than once per actual transmission attempt.
+ */
+- (void)registerOutgoingMessageStreamEventID:(NSString *)outgoingMessageStreamEventID;
+
+/// @brief Returns the local stream JID for the most recent stream element event associated with the message.
+/// @discussion Incoming messages always have a single stream element event associated with them. Outgoing messages can have 0 or more, one per each transmission attempt.
+- (nullable XMPPJID *)streamJID;
+
+/// @brief Returns the timestamp for the most recent stream element event associated with the message.
+/// @discussion Incoming messages always have a single stream element event associated with them. Outgoing messages can have 0 or more, one per each transmission attempt.
+- (nullable NSDate *)streamTimestamp;
 
 @end
 

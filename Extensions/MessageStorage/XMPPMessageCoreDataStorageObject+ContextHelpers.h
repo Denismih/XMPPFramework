@@ -1,5 +1,5 @@
 #import "XMPPMessageCoreDataStorageObject.h"
-#import "XMPPMessageContextCoreDataStorageObject.h"
+#import "XMPPMessageContextCoreDataStorageObject+Protected.h"
 #import "XMPPMessageContextItemCoreDataStorageObject+Protected.h"
 
 NS_ASSUME_NONNULL_BEGIN
