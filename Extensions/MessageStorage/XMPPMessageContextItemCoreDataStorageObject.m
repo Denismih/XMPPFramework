@@ -1,6 +1,7 @@
 #import "XMPPMessageContextItemCoreDataStorageObject.h"
 #import "XMPPMessageContextItemCoreDataStorageObject+Protected.h"
 #import "XMPPJID.h"
+#import "NSManagedObject+XMPPCoreDataStorage.h"
 
 @interface XMPPMessageContextItemCoreDataStorageObject ()
 
@@ -11,6 +12,11 @@
 @implementation XMPPMessageContextItemCoreDataStorageObject
 
 @dynamic contextElement;
+
++ (NSPredicate *)tagPredicateWithValue:(NSString *)value
+{
+    return [NSPredicate predicateWithFormat:@"%K = %@", NSStringFromSelector(@selector(tag)), value];
+}
 
 @end
 
@@ -116,11 +122,32 @@
     [self didChangeValueForKey:NSStringFromSelector(@selector(valueUser))];
 }
 
+#pragma mark - Public
+
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextJIDItemTag)value
+{
+    return [super tagPredicateWithValue:value];
+}
+
++ (NSPredicate *)jidPredicateWithValue:(XMPPJID *)value compareOptions:(XMPPJIDCompareOptions)compareOptions
+{
+    return [self xmpp_jidPredicateWithDomainKeyPath:NSStringFromSelector(@selector(valueDomain))
+                                    resourceKeyPath:NSStringFromSelector(@selector(valueResource))
+                                        userKeyPath:NSStringFromSelector(@selector(valueUser))
+                                              value:value
+                                     compareOptions:compareOptions];
+}
+
 @end
 
 @implementation XMPPMessageContextMarkerItemCoreDataStorageObject
 
 @dynamic tag;
+
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextMarkerItemTag)value
+{
+    return [super tagPredicateWithValue:value];
+}
 
 @end
 
@@ -128,10 +155,40 @@
 
 @dynamic tag, value;
 
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextStringItemTag)value
+{
+    return [super tagPredicateWithValue:value];
+}
+
++ (NSPredicate *)stringPredicateWithValue:(NSString *)value
+{
+    return [NSPredicate predicateWithFormat:@"%K = %@", NSStringFromSelector(@selector(value)), value];
+}
+
 @end
 
 @implementation XMPPMessageContextTimestampItemCoreDataStorageObject
 
 @dynamic tag, value;
+
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextTimestampItemTag)value
+{
+    return [super tagPredicateWithValue:value];
+}
+
++ (NSPredicate *)timestampRangePredicateWithStartValue:(NSDate *)startValue endValue:(NSDate *)endValue
+{
+    NSMutableArray *subpredicates = [[NSMutableArray alloc] init];
+    
+    if (startValue) {
+        [subpredicates addObject:[NSPredicate predicateWithFormat:@"%K >= %@", NSStringFromSelector(@selector(value)), startValue]];
+    }
+    
+    if (endValue) {
+        [subpredicates addObject:[NSPredicate predicateWithFormat:@"%K <= %@", NSStringFromSelector(@selector(value)), endValue]];
+    }
+    
+    return subpredicates.count == 1 ? subpredicates.firstObject : [NSCompoundPredicate andPredicateWithSubpredicates:subpredicates];
+}
 
 @end

@@ -1,8 +1,11 @@
 #import "XMPPMessageContextItemCoreDataStorageObject.h"
+#import "XMPPJID.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class XMPPMessageContextCoreDataStorageObject, XMPPJID;
+@class XMPPMessageContextCoreDataStorageObject;
+
+typedef NS_ENUM(int16_t, XMPPMessageDirection);
 
 /// A tag assigned to a JID auxiliary value.
 typedef NSString * XMPPMessageContextJIDItemTag NS_EXTENSIBLE_STRING_ENUM;
@@ -32,6 +35,12 @@ typedef NSString * XMPPMessageContextTimestampItemTag NS_EXTENSIBLE_STRING_ENUM;
 /// The stored JID value.
 @property (nonatomic, strong, nullable) XMPPJID *value;
 
+/// Returns a predicate to fetch values with the specified tag.
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextJIDItemTag)value;
+
+/// Returns a predicate to fetch items with the specified value.
++ (NSPredicate *)jidPredicateWithValue:(XMPPJID *)value compareOptions:(XMPPJIDCompareOptions)compareOptions;
+
 @end
 
 /// A storage object representing a module-provided marker assigned to a stored message.
@@ -39,6 +48,9 @@ typedef NSString * XMPPMessageContextTimestampItemTag NS_EXTENSIBLE_STRING_ENUM;
 
 /// The tag assigned to the marker.
 @property (nonatomic, copy, nullable) XMPPMessageContextMarkerItemTag tag;
+
+/// Returns a predicate to fetch markers with the specified tag.
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextMarkerItemTag)value;
 
 @end
 
@@ -51,6 +63,12 @@ typedef NSString * XMPPMessageContextTimestampItemTag NS_EXTENSIBLE_STRING_ENUM;
 /// The stored string value.
 @property (nonatomic, copy, nullable) NSString *value;
 
+/// Returns a predicate to fetch values with the specified tag.
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextStringItemTag)tag;
+
+/// Returns a predicate to fetch items with the specified value.
++ (NSPredicate *)stringPredicateWithValue:(NSString *)value;
+
 @end
 
 /// A storage object representing a module-provided timestamp value assigned to a stored message.
@@ -61,6 +79,12 @@ typedef NSString * XMPPMessageContextTimestampItemTag NS_EXTENSIBLE_STRING_ENUM;
 
 /// The stored timestamp value.
 @property (nonatomic, strong, nullable) NSDate *value;
+
+/// Returns a predicate to fetch values with the specified tag.
++ (NSPredicate *)tagPredicateWithValue:(XMPPMessageContextTimestampItemTag)value;
+
+/// Returns a predicate to fetch items with values in the specified range.
++ (NSPredicate *)timestampRangePredicateWithStartValue:(nullable NSDate *)startValue endValue:(nullable NSDate *)endValue;
 
 @end
 
