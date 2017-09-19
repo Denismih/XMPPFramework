@@ -919,3 +919,121 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XMPPDelayedDeliveryMessageStorage)
+
+- (void)testDelayedDeliveryDirectStorage
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    [message setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                               from:[XMPPJID jidWithString:@"domain"]
+                  reasonDescription:@"Test"];
+    
+    XCTAssertEqualObjects([message delayedDeliveryDate], [NSDate dateWithTimeIntervalSinceReferenceDate:0]);
+    XCTAssertEqualObjects([message delayedDeliveryFrom], [XMPPJID jidWithString:@"domain"]);
+    XCTAssertEqualObjects([message delayedDeliveryReasonDescription], @"Test");
+}
+
+- (void)testDelayedDeliveryStreamEventHandling
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    
+    XMPPMessage *message = [[XMPPMessage alloc] initWithXMLString:
+                            @"<message>"
+                            @"  <delay xmlns='urn:xmpp:delay'"
+                            @"     from='capulet.com'"
+                            @"     stamp='2002-09-10T23:08:25Z'"
+                            @"  >Offline Storage</delay>"
+                            @"</message>"
+                                                            error:nil];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerDelayedDeliveryForReceivedMessage:message];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSFetchRequest *fetchRequest = [XMPPMessageCoreDataStorageObject xmpp_fetchRequestInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertEqualObjects([fetchResult.firstObject delayedDeliveryDate], [NSDate dateWithXmppDateTimeString:@"2002-09-10T23:08:25Z"]);
+        XCTAssertEqualObjects([fetchResult.firstObject delayedDeliveryFrom], [XMPPJID jidWithString:@"capulet.com"]);
+        XCTAssertEqualObjects([fetchResult.firstObject delayedDeliveryReasonDescription], @"Offline Storage");
+    }];
+}
+
+- (void)testDelayedDeliveryTimestampMessageContextFetch
+{
+    XMPPMessageCoreDataStorageObject *shorterDelayMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    shorterDelayMessage.direction = XMPPMessageDirectionIncoming;
+    [shorterDelayMessage registerIncomingMessageStreamEventID:@"earlierEventID"
+                                                    streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                                         streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    
+    XMPPMessageCoreDataStorageObject *longerDelayMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    longerDelayMessage.direction = XMPPMessageDirectionIncoming;
+    [longerDelayMessage registerIncomingMessageStreamEventID:@"laterEventID"
+                                                   streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                                        streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]];
+    
+    [shorterDelayMessage setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:-1] from:nil reasonDescription:@"Shorter delay"];
+    [longerDelayMessage setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:-2] from:nil reasonDescription:@"Longer delay"];
+    
+    NSPredicate *predicate = [XMPPMessageContextItemCoreDataStorageObject delayedDeliveryTimestampKindPredicate];
+    NSFetchRequest *fetchRequest =
+    [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:predicate
+                                                                 inAscendingOrder:YES
+                                                         fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    NSArray<XMPPMessageContextItemCoreDataStorageObject *> *result = [self.storage.mainThreadManagedObjectContext executeFetchRequest:fetchRequest
+                                                                                                                                error:NULL];
+    
+    XCTAssertEqual(result.count, 2);
+    XCTAssertEqualObjects(result[0].message, longerDelayMessage);
+    XCTAssertEqualObjects(result[1].message, shorterDelayMessage);
+}
+
+- (void)testDelayedDeliveryStreamTimestampDisplacementMessageContextFetch
+{
+    XMPPMessageCoreDataStorageObject *liveMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    liveMessage.direction = XMPPMessageDirectionIncoming;
+    liveMessage.stanzaID = @"liveMessageID";
+    [liveMessage registerIncomingMessageStreamEventID:@"liveMessageEventID"
+                                            streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                                 streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    
+    XMPPMessageCoreDataStorageObject *delayedDeliveryMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    delayedDeliveryMessage.direction = XMPPMessageDirectionIncoming;
+    [delayedDeliveryMessage registerIncomingMessageStreamEventID:@"delayedDeliveryMessageEventID"
+                                                       streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                                            streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]];
+    
+    [delayedDeliveryMessage setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:-1] from:nil reasonDescription:nil];
+    
+    NSPredicate *predicate =
+    [NSCompoundPredicate orPredicateWithSubpredicates:@[[XMPPMessageContextItemCoreDataStorageObject streamTimestampKindPredicate],
+                                                        [XMPPMessageContextItemCoreDataStorageObject delayedDeliveryTimestampKindPredicate]]];
+    NSFetchRequest *fetchRequest =
+    [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:predicate
+                                                                 inAscendingOrder:YES
+                                                         fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    NSArray<XMPPMessageContextItemCoreDataStorageObject *> *result = [self.storage.mainThreadManagedObjectContext executeFetchRequest:fetchRequest
+                                                                                                                                error:NULL];
+    
+    XCTAssertEqual(result.count, 2);
+    XCTAssertEqualObjects(result[0].message, delayedDeliveryMessage);
+    XCTAssertEqualObjects(result[1].message, liveMessage);
+}
+
+@end
