@@ -14,6 +14,8 @@
 - (void)fakeIQResponse:(XMPPIQ *) iq;
 - (void)fakeMessageResponse:(XMPPMessage *) message;
 
+- (void)fakeCurrentEventWithID:(NSString *)fakeEventID timestamp:(NSDate *)fakeEventTimestamp forActionWithBlock:(dispatch_block_t)block;
+
 @property (nonatomic, copy) void (^elementReceived)(__kindof XMPPElement *element);
 
 @end

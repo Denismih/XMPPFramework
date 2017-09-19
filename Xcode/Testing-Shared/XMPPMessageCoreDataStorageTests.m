@@ -7,6 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
+#import "XMPPMockStream.h"
 @import XMPPFramework;
 
 @interface XMPPMessageCoreDataStorageTests : XCTestCase
@@ -571,6 +572,105 @@
         XCTAssertEqualObjects([xmppMessage thread], @"thread");
         XCTAssertEqualObjects([xmppMessage type], typeString);
     }
+}
+
+- (void)testIncomingMessageEventStorageTransactionBatching
+{
+    // Delayed saving would interfere with the test objective, i.e. ensuring the actions are performed in a single batch
+    self.storage.saveThreshold = 0;
+    
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    mockStream.myJID = [XMPPJID jidWithString:@"romeo@example.net"];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+             messageObject.fromJID = [XMPPJID jidWithString:@"juliet@example.com"];
+             messageObject.toJID = [XMPPJID jidWithString:@"romeo@example.net"];
+         }];
+        
+         [transaction scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+             messageObject.body = @"Art thou not Romeo, and a Montague?";
+         }];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XMPPMessageCoreDataStorageObject *message = [XMPPMessageCoreDataStorageObject findWithStreamEventID:@"eventID"
+                                                                                     inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        XCTAssertNotNil(message);
+        XCTAssertEqual(message.direction, XMPPMessageDirectionIncoming);
+        XCTAssertEqualObjects([message streamJID], [XMPPJID jidWithString:@"romeo@example.net"]);
+        XCTAssertEqualObjects([message streamTimestamp], [NSDate dateWithTimeIntervalSinceReferenceDate:0]);
+        XCTAssertEqualObjects([message fromJID], [XMPPJID jidWithString:@"juliet@example.com"]);
+        XCTAssertEqualObjects([message toJID], [XMPPJID jidWithString:@"romeo@example.net"]);
+        XCTAssertEqualObjects([message body], @"Art thou not Romeo, and a Montague?");
+    }];
+}
+
+- (void)testOutgoingMessageStorageInsertion
+{
+    XMPPMessageCoreDataStorageObject *message = [self.storage insertOutgoingMessageStorageObject];
+    XCTAssertEqual(message.direction, XMPPMessageDirectionOutgoing);
+}
+
+- (void)testOutgoingMessageEventStorageTransactionBatching
+{
+    // Delayed saving would interfere with the test objective, i.e. ensuring the actions are performed in a single batch
+    self.storage.saveThreshold = 0;
+    
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    mockStream.myJID = [XMPPJID jidWithString:@"juliet@example.com"];
+    
+    XMPPMessageCoreDataStorageObject *message = [self.storage insertOutgoingMessageStorageObject];
+    [message registerOutgoingMessageStreamEventID:@"eventID"];
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSRefreshedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeOutgoingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+             messageObject.fromJID = [XMPPJID jidWithString:@"juliet@example.com"];
+             messageObject.toJID = [XMPPJID jidWithString:@"romeo@example.net"];
+         }];
+         
+         [transaction scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+             messageObject.body = @"Art thou not Romeo, and a Montague?";
+         }];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XMPPMessageCoreDataStorageObject *updatedMessage = [XMPPMessageCoreDataStorageObject findWithStreamEventID:@"eventID"
+                                                                                            inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        XCTAssertEqualObjects(updatedMessage, message);
+        XCTAssertEqualObjects([updatedMessage streamJID], [XMPPJID jidWithString:@"juliet@example.com"]);
+        XCTAssertEqualObjects([updatedMessage streamTimestamp], [NSDate dateWithTimeIntervalSinceReferenceDate:0]);
+        XCTAssertEqualObjects([updatedMessage fromJID], [XMPPJID jidWithString:@"juliet@example.com"]);
+        XCTAssertEqualObjects([updatedMessage toJID], [XMPPJID jidWithString:@"romeo@example.net"]);
+        XCTAssertEqualObjects([updatedMessage body], @"Art thou not Romeo, and a Montague?");
+    }];
+}
+
+- (void)provideTransactionForFakeIncomingMessageEventInStream:(XMPPMockStream *)stream withID:(NSString *)eventID timestamp:(NSDate *)timestamp block:(void (^)(XMPPMessageCoreDataStorageTransaction *transaction))block
+{
+    [stream fakeCurrentEventWithID:eventID timestamp:timestamp forActionWithBlock:^{
+        [self.storage provideTransactionForIncomingMessageEvent:[stream currentElementEvent] withHandler:block];
+    }];
+}
+
+- (void)provideTransactionForFakeOutgoingMessageEventInStream:(XMPPMockStream *)stream withID:(NSString *)eventID timestamp:(NSDate *)timestamp block:(void (^)(XMPPMessageCoreDataStorageTransaction *transaction))block
+{
+    [stream fakeCurrentEventWithID:eventID timestamp:timestamp forActionWithBlock:^{
+        [self.storage provideTransactionForOutgoingMessageEvent:[stream currentElementEvent] withHandler:block];
+    }];
 }
 
 - (XCTestExpectation *)expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:(NSString *)userInfoKey count:(NSInteger)expectedObjectCount handler:(BOOL (^)(__kindof NSManagedObject *object))handler
