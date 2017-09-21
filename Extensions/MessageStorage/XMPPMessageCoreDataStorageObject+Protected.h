@@ -33,6 +33,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable XMPPMessageCoreDataStorageObject *)findWithStreamEventID:(NSString *)streamEventID
                                               inManagedObjectContext:(NSManagedObjectContext *)managedObjectContext;
 
+/// @brief Returns the message object from the given context with the given stanza ID, if only one is found.
+/// @discussion The XMPP standard does not enforce uniqueness of stanza IDs and this method will return nil if more than one matching object is found.
++ (nullable XMPPMessageCoreDataStorageObject *)findWithUniqueStanzaID:(NSString *)stanzaID
+                                               inManagedObjectContext:(NSManagedObjectContext *)managedObjectContext;
+
 /// @brief Records stream element event properties for the incoming message.
 /// @discussion This method will trigger an assertion unless invoked on an incoming message. It will also trigger an assertion when invoked more than once.
 - (void)registerIncomingMessageStreamEventID:(NSString *)streamEventID
