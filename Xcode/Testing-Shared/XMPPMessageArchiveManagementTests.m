@@ -150,7 +150,9 @@
 }
 
 - (void)testDelegateDidReceiveIQ {
-    self.delegateExpectations = @{ NSStringFromSelector(@selector(xmppMessageArchiveManagement:didFinishReceivingMessagesWithSet:)) :
+    self.delegateExpectations = @{ NSStringFromSelector(@selector(xmppMessageArchiveManagement:didFinishReceivingMessagesWithArchiveIDs:)) :
+                                       [self expectationWithDescription:@"Did finish receiving messages with archive IDs"],
+                                   NSStringFromSelector(@selector(xmppMessageArchiveManagement:didFinishReceivingMessagesWithSet:)) :
                                        [self expectationWithDescription:@"Did finish receiving messages with set"] };
 	
 	XMPPMockStream *streamTest = [[XMPPMockStream alloc] init];
@@ -161,6 +163,10 @@
 	
 	__weak typeof(XMPPMockStream) *weakStreamTest = streamTest;
 	streamTest.elementReceived = ^void(NSXMLElement *element) {
+        NSString *queryID = [[element elementForName:@"query"] attributeStringValueForName:@"queryid"];
+        XMPPMessage *fakeMessageResponse = [self fakeMessageWithQueryID:queryID eid:@"responseID"];
+        [weakStreamTest fakeMessageResponse:fakeMessageResponse];
+        
 		NSString *elementID = [element attributeForName:@"id"].stringValue;
 		XMPPIQ *fakeIQResponse = [self fakeIQWithID:elementID];
 		[weakStreamTest fakeIQResponse:fakeIQResponse];
@@ -173,6 +179,13 @@
 			XCTFail(@"Expectation Failed with error: %@", error);
 		}
 	}];
+}
+
+- (void)xmppMessageArchiveManagement:(XMPPMessageArchiveManagement *)xmppMessageArchiveManagement didFinishReceivingMessagesWithArchiveIDs:(NSArray<NSString *> *)archiveIDs
+{
+    XCTAssertEqualObjects(@[@"28482-98726-73623"], archiveIDs);
+    
+    [self.delegateExpectations[NSStringFromSelector(_cmd)] fulfill];
 }
 
 - (void)xmppMessageArchiveManagement:(XMPPMessageArchiveManagement *)xmppMessageArchiveManagement didFinishReceivingMessagesWithSet:(XMPPResultSet *)resultSet {

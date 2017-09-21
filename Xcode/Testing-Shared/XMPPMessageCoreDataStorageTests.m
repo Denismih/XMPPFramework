@@ -1037,3 +1037,313 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XMPPMessageArchiveManagementLocalStorage)
+
+- (void)testMessageArchiveBasicStorage
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    NSXMLElement *resultItem = [self fakeMessageArchiveResultItemWithID:@"28482-98726-73623" includingPayload:YES];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeComplete];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSFetchRequest *fetchRequest = [XMPPMessageCoreDataStorageObject xmpp_fetchRequestInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertEqualObjects([fetchResult.firstObject messageArchiveID], @"28482-98726-73623");
+        XCTAssertEqualObjects([fetchResult.firstObject messageArchiveDate], [NSDate dateWithXmppDateTimeString:@"2010-07-10T23:08:25Z"]);
+        XCTAssertEqualObjects([fetchResult.firstObject body], @"Hail to thee");
+    }];
+}
+
+- (void)testMessageArchivePartialResultPageTimestampContextFetch
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    NSXMLElement *resultItem = [self fakeMessageArchiveResultItemWithID:@"28482-98726-73623" includingPayload:YES];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSPredicate *predicate = [XMPPMessageContextItemCoreDataStorageObject
+                                  messageArchiveTimestampKindPredicateWithOptions:XMPPMessageArchiveTimestampContextIncludingPartialResultPages];
+        NSFetchRequest *fetchRequest =
+        [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:predicate
+                                                                     inAscendingOrder:YES
+                                                             fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageContextItemCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertEqualObjects([fetchResult.firstObject.message messageArchiveID], @"28482-98726-73623");
+    }];
+}
+
+- (void)testMessageArchiveFinalizedResultPageTimestampContextFetch
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    NSXMLElement *partialResultPageItem = [self fakeMessageArchiveResultItemWithID:@"partialResultPageArchiveID" includingPayload:YES];
+    NSXMLElement *completeResultPageItem = [self fakeMessageArchiveResultItemWithID:@"completeResultPageArchiveID" includingPayload:YES];
+    
+    for (NSString *messageID in @[@"partialResultPageArchiveID", @"completeResultPageArchiveID"]) {
+        [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+         ^BOOL(__kindof NSManagedObject *object) {
+             return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]] && [[object messageArchiveID] isEqualToString:messageID];
+         }];
+    }
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"partialResultPageEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:partialResultPageItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"completeResultPageEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:completeResultPageItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:nil];
+    
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification object:self.storage.mainThreadManagedObjectContext handler:nil];
+    
+    [self.storage finalizeResultSetPageWithMessageArchiveIDs:@[@"completeResultPageArchiveID"]];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSPredicate *predicate = [XMPPMessageContextItemCoreDataStorageObject messageArchiveTimestampKindPredicateWithOptions:0];
+        NSFetchRequest *fetchRequest =
+        [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:predicate
+                                                                     inAscendingOrder:YES
+                                                             fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageContextItemCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertEqualObjects([fetchResult.firstObject.message messageArchiveID], @"completeResultPageArchiveID");
+    }];
+}
+
+- (void)testMessageArchiveDeletedResultItemTimestampContextFetch
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    NSXMLElement *resultItem = [self fakeMessageArchiveResultItemWithID:@"partialResultPageArchiveID" includingPayload:YES];
+    NSXMLElement *resultPlaceholderItem = [self fakeMessageArchiveResultItemWithID:@"deletedResultItemArchiveID" includingPayload:NO];
+    
+    for (NSString *archiveID in @[@"partialResultPageArchiveID", @"deletedResultItemArchiveID"]) {
+        [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+         ^BOOL(__kindof NSManagedObject *object) {
+             return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]] && [[object messageArchiveID] isEqualToString:archiveID];
+         }];
+    }
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"partialResultPageEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"deletedResultItemEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultPlaceholderItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSPredicate *predicate = [XMPPMessageContextItemCoreDataStorageObject
+                                  messageArchiveTimestampKindPredicateWithOptions:XMPPMessageArchiveTimestampContextIncludingDeletedResultItems];
+        NSFetchRequest *fetchRequest =
+        [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:predicate
+                                                                     inAscendingOrder:YES
+                                                             fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageContextItemCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertEqualObjects([fetchResult.firstObject.message messageArchiveID], @"deletedResultItemArchiveID");
+    }];
+}
+
+- (void)testMessageArchiveDuplicateArchiveID
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    NSXMLElement *resultItem = [self fakeMessageArchiveResultItemWithID:@"28482-98726-73623" includingPayload:YES];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"originalEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:nil];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }].inverted = YES;
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"duplicateEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self waitForExpectationsWithTimeout:1 handler:nil];
+}
+
+- (void)testMessageArchiveDuplicateStanzaID
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    
+    XMPPMessageCoreDataStorageObject *liveMessageObject =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    liveMessageObject.direction = XMPPMessageDirectionIncoming;
+    liveMessageObject.stanzaID = @"123";
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    NSXMLElement *resultItem = [self fakeMessageArchiveResultItemWithID:@"28482-98726-73623" includingPayload:YES];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }].inverted = YES;
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"archivedMessageEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self waitForExpectationsWithTimeout:1 handler:nil];
+}
+
+- (void)testMessageArchiveStreamTimestampDisplacementContextFetch
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    
+    XMPPMessageCoreDataStorageObject *liveMessageObject =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    liveMessageObject.direction = XMPPMessageDirectionIncoming;
+    liveMessageObject.stanzaID = @"liveMessageID";
+    [liveMessageObject registerIncomingMessageStreamEventID:@"liveMessageEventID"
+                                                  streamJID:mockStream.myJID
+                                       streamEventTimestamp:[NSDate dateWithXmppDateTimeString:@"2010-07-10T23:08:26Z"]];
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    NSXMLElement *resultItem = [self fakeMessageArchiveResultItemWithID:@"28482-98726-73623" includingPayload:YES];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream
+                                                         withID:@"archivedMessageEventID"
+                                                      timestamp:[NSDate dateWithXmppDateTimeString:@"2010-07-10T23:08:27Z"]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeMetadataOnly];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSPredicate *streamTimestampPredicate = [XMPPMessageContextItemCoreDataStorageObject streamTimestampKindPredicate];
+        NSPredicate *messageArchiveTimestampPredicate =
+        [XMPPMessageContextItemCoreDataStorageObject
+         messageArchiveTimestampKindPredicateWithOptions:XMPPMessageArchiveTimestampContextIncludingPartialResultPages];
+        NSPredicate *predicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[streamTimestampPredicate, messageArchiveTimestampPredicate]];
+        
+        NSFetchRequest *fetchRequest =
+        [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:predicate
+                                                                     inAscendingOrder:YES
+                                                             fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageContextItemCoreDataStorageObject *> *result = [self.storage.mainThreadManagedObjectContext executeFetchRequest:fetchRequest
+                                                                                                                                    error:NULL];
+        
+        XCTAssertEqual(result.count, 2);
+        XCTAssertEqualObjects([result[0].message messageArchiveID], @"28482-98726-73623");
+        XCTAssertEqualObjects(result[1].message.stanzaID, @"liveMessageID");
+    }];
+}
+
+- (void)testMyArchivedChatMessage
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    mockStream.myJID = [XMPPJID jidWithString:@"witch@shakespeare.lit"];
+    
+    NSXMLElement *resultItem = [self fakeMessageArchiveResultItemWithID:@"28482-98726-73623" includingPayload:YES];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeMessageArchiveQueryResultItem:resultItem inMode:XMPPMessageArchiveQueryResultStorageModeComplete];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSFetchRequest *fetchRequest = [XMPPMessageCoreDataStorageObject xmpp_fetchRequestInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertTrue([fetchResult.firstObject isMyArchivedChatMessage]);
+    }];
+}
+
+- (NSXMLElement *)fakeMessageArchiveResultItemWithID:(NSString *)messageArchiveID includingPayload:(BOOL)shouldIncludePayload
+{
+    NSMutableString *resultItemString = [[NSMutableString alloc] init];
+    [resultItemString appendFormat:@"<result xmlns='urn:xmpp:mam:2' queryid='f27' id='%@'>", messageArchiveID];
+    [resultItemString appendString:@"  <forwarded xmlns='urn:xmpp:forward:0'>"
+                                   @"    <delay xmlns='urn:xmpp:delay' stamp='2010-07-10T23:08:25Z'/>"];
+    if (shouldIncludePayload) {
+        [resultItemString appendString:@"<message xmlns='jabber:client' type='chat' id='123' from='witch@shakespeare.lit' to='macbeth@shakespeare.lit'>"
+                                       @"  <body>Hail to thee</body>"
+                                       @"</message>"];
+    }
+    [resultItemString appendString:@"  </forwarded>"
+                                   @"</result>"];
+    
+    return [[NSXMLElement alloc] initWithXMLString:resultItemString error:NULL];
+}
+
+@end

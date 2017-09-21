@@ -143,8 +143,16 @@
     NSString *finalizedQueryID = self.queryID;
     
     dispatch_group_notify(self.resultSetPageProcessingGroup, self.moduleQueue, ^{
+        NSMutableArray *pageArchiveIDs;
         if ([finalizedQueryID isEqualToString:self.queryID]) {
-            [self finalizeMessageArchiveQuery];
+            pageArchiveIDs = [[NSMutableArray alloc] init];
+            for (NSXMLElement *result in self.resultSetPageElementsIndex.allValues) {
+                [pageArchiveIDs addObject:[result attributeStringValueForName:@"id"]];
+            }
+            
+            self.queryID = nil;
+            self.resultSetPageElementsIndex = nil;
+            self.resultSetPageProcessingGroup = nil;
         }
         
         if ([[iq type] isEqualToString:@"result"]) {
@@ -154,6 +162,10 @@
             XMPPResultSet *resultSet = [XMPPResultSet resultSetFromElement:setElement];
             [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet];
             
+            if (pageArchiveIDs.count > 0) {
+                [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithArchiveIDs:pageArchiveIDs];
+            }
+            
             NSString *lastId = [resultSet elementForName:@"last"].stringValue;
             if (self.resultAutomaticPagingPageSize != 0 && ![finElement attributeBoolValueForName:@"complete"] && lastId) {
                 [self continueAutomaticPagingWithOriginalIQ:[XMPPIQ iqFromElement:[trackerInfo element]] lastResultID:lastId];
@@ -162,13 +174,6 @@
             [multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveMessages:iq];
         }
     });
-}
-
-- (void)finalizeMessageArchiveQuery
-{
-    self.queryID = nil;
-    self.resultSetPageElementsIndex = nil;
-    self.resultSetPageProcessingGroup = nil;
 }
 
 - (void)continueAutomaticPagingWithOriginalIQ:(XMPPIQ *)originalIQ lastResultID:(NSString *)lastResultID

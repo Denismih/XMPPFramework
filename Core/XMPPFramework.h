@@ -165,6 +165,7 @@
 #import "XMPPMessageCoreDataStorage+XMPPOneToOneChat.h"
 #import "XMPPMessageCoreDataStorage+XMPPMUCLight.h"
 #import "XMPPMessageCoreDataStorage+XEP_0203.h"
+#import "XMPPMessageCoreDataStorage+XEP_0313.h"
 #import "XMPPMessageCoreDataStorageObject.h"
 #import "XMPPMessageCoreDataStorageObject+Protected.h"
 #import "XMPPMessageCoreDataStorageObject+ContextHelpers.h"
