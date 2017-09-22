@@ -1514,3 +1514,71 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XMPPOutOfBandResourceMessagingStorage)
+
+- (void)testOutOfBandResourceAssignment
+{
+    XMPPMessageCoreDataStorageObject *resourceWithDescriptionMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    [resourceWithDescriptionMessage assignOutOfBandResourceWithInternalID:@"resourceID1" description:@"A license to Jabber!"];
+    
+    XMPPMessageCoreDataStorageObject *resourceWithoutDescriptionMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    [resourceWithoutDescriptionMessage assignOutOfBandResourceWithInternalID:@"resourceID2" description:nil];
+    
+    XCTAssertEqualObjects([resourceWithDescriptionMessage outOfBandResourceInternalID], @"resourceID1");
+    XCTAssertEqualObjects([resourceWithDescriptionMessage outOfBandResourceDescription], @"A license to Jabber!");
+    XCTAssertEqualObjects([resourceWithoutDescriptionMessage outOfBandResourceInternalID], @"resourceID2");
+    XCTAssertNil([resourceWithoutDescriptionMessage outOfBandResourceDescription]);
+}
+
+- (void)testOutOfBandResourceURIRegistration
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    [message assignOutOfBandResourceWithInternalID:@"resourceID1" description:@"A license to Jabber!"];
+    [message setAssignedOutOfBandResourceURIString:@"http://www.jabber.org/images/psa-license.jpg"];
+    
+    XCTAssertEqualObjects([message outOfBandResourceURIString], @"http://www.jabber.org/images/psa-license.jpg");
+}
+
+- (void)testOutOfBandResourceIncomingMessageStorage
+{
+    XMPPMessage *outOfBandResourceMessage = [[XMPPMessage alloc] initWithXMLString:
+                                             @"<message from='stpeter@jabber.org/work'"
+                                             @"         to='MaineBoy@jabber.org/home'>"
+                                             @"  <body>Yeah, but do you have a license to Jabber?</body>"
+                                             @"  <x xmlns='jabber:x:oob'>"
+                                             @"    <url>http://www.jabber.org/images/psa-license.jpg</url>"
+                                             @"    <desc>A license to Jabber!</desc>"
+                                             @"  </x>"
+                                             @"</message>"
+                                                                             error:NULL];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"eventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerOutOfBandResourceForReceivedMessage:outOfBandResourceMessage];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSFetchRequest *fetchRequest = [XMPPMessageCoreDataStorageObject xmpp_fetchRequestInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertNotNil([fetchResult.firstObject outOfBandResourceInternalID]);
+        XCTAssertEqualObjects([fetchResult.firstObject outOfBandResourceURIString], @"http://www.jabber.org/images/psa-license.jpg");
+        XCTAssertEqualObjects([fetchResult.firstObject outOfBandResourceDescription], @"A license to Jabber!");
+    }];
+}
+
+@end
