@@ -1440,3 +1440,77 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XMPPMessageDeliveryReceiptsStorage)
+
+- (void)testMessageDeliveryReceiptStorage
+{
+    XMPPMessageCoreDataStorageObject *fakeSentMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    fakeSentMessage.stanzaID = @"richard2-4.1.247";
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"deliveryReceiptEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeReceivedDeliveryReceiptResponseMessage:[self fakeDeliveryReceiptResponseMessage]];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XCTAssertTrue([fakeSentMessage hasAssociatedDeliveryReceiptResponseMessage]);
+        
+        XMPPMessageCoreDataStorageObject *deliveryReceiptMessage =
+        [XMPPMessageCoreDataStorageObject findWithUniqueStanzaID:@"bi29sg183b4v"
+                                          inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        XCTAssertEqualObjects([deliveryReceiptMessage messageDeliveryReceiptResponseID], @"richard2-4.1.247");
+    }];
+}
+
+- (void)testMessageDeliveryReceiptLookup
+{
+    XMPPMessageCoreDataStorageObject *fakeSentMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    fakeSentMessage.stanzaID = @"richard2-4.1.247";
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+
+    [self provideTransactionForFakeIncomingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"deliveryReceiptEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeReceivedDeliveryReceiptResponseMessage:[self fakeDeliveryReceiptResponseMessage]];
+     }];
+
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XMPPMessageCoreDataStorageObject *deliveryReceiptMessage =
+        [XMPPMessageCoreDataStorageObject findDeliveryReceiptResponseForMessageWithID:@"richard2-4.1.247"
+                                                               inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        XCTAssertEqualObjects(deliveryReceiptMessage.stanzaID, @"bi29sg183b4v");
+    }];
+}
+
+- (XMPPMessage *)fakeDeliveryReceiptResponseMessage
+{
+    return [[XMPPMessage alloc] initWithXMLString:
+            @"<message"
+            @"    from='kingrichard@royalty.england.lit/throne'"
+            @"    id='bi29sg183b4v'"
+            @"    to='northumberland@shakespeare.lit/westminster'>"
+            @"  <received xmlns='urn:xmpp:receipts' id='richard2-4.1.247'/>"
+            @"</message>"
+                                            error:NULL];
+}
+
+@end
