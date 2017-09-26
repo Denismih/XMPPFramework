@@ -1699,3 +1699,49 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XEP_0245)
+
+- (void)testMeCommandPrefixDetection
+{
+    XMPPMessageCoreDataStorageObject *meCommandMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    meCommandMessage.body = @"/me shrugs in disgust";
+    
+    XMPPMessageCoreDataStorageObject *plainMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    plainMessage.body = @"Atlas shrugs in disgust";
+    
+    XMPPMessageCoreDataStorageObject *nonAnchoredMePrefixMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    nonAnchoredMePrefixMessage.body = @" /me shrugs in disgust";
+    
+    XCTAssertEqualObjects([meCommandMessage meCommandText], @"shrugs in disgust");
+    XCTAssertNil([plainMessage meCommandText]);
+    XCTAssertNil([nonAnchoredMePrefixMessage meCommandText]);
+}
+
+- (void)testIncomingMessageMeCommandSubjectJID
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    message.fromJID = [XMPPJID jidWithString:@"olympians@chat.gods.lit/Atlas"];
+    message.body = @"/me shrugs in disgust";
+    
+    XCTAssertEqualObjects([message meCommandSubjectJID], [XMPPJID jidWithString:@"olympians@chat.gods.lit/Atlas"]);
+}
+
+- (void)testOutgoingMessageMeCommandSubjectJID
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    message.direction = XMPPMessageDirectionOutgoing;
+    message.body = @"/me shrugs in disgust";
+    [message registerOutgoingMessageStreamEventID:@"eventID"];
+    [message registerOutgoingMessageStreamJID:[XMPPJID jidWithString:@"atlas@chat.gods.lit"]
+                             streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    
+    XCTAssertEqualObjects([message meCommandSubjectJID], [XMPPJID jidWithString:@"atlas@chat.gods.lit"]);
+}
+
+@end
