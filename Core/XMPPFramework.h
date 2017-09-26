@@ -172,6 +172,7 @@
 #import "XMPPMessageCoreDataStorage+XEP_0184.h"
 #import "XMPPMessageCoreDataStorage+XEP_0198.h"
 #import "XMPPMessageCoreDataStorage+XEP_0203.h"
+#import "XMPPMessageCoreDataStorage+XEP_0308.h"
 #import "XMPPMessageCoreDataStorage+XEP_0313.h"
 #import "XMPPMessageCoreDataStorageObject.h"
 #import "XMPPMessageCoreDataStorageObject+Protected.h"

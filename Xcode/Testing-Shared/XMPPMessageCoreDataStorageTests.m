@@ -1582,3 +1582,120 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XMPPLastMessageCorrectionStorage)
+
+- (void)testMessageCorrectionDirectStorage
+{
+    XMPPMessageCoreDataStorageObject *originalMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    originalMessage.stanzaID = @"originalMessageID";
+    
+    XMPPMessageCoreDataStorageObject *correctedMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    correctedMessage.direction = XMPPMessageDirectionOutgoing;
+    [correctedMessage assignMessageCorrectionID:@"originalMessageID"];
+    
+    XCTAssertTrue([originalMessage hasAssociatedCorrectionMessage]);
+    XCTAssertEqualObjects([correctedMessage messageCorrectionID], @"originalMessageID");
+}
+
+- (void)testMessageCorrectionStreamEventHandling
+{
+    XMPPMessageCoreDataStorageObject *originalMessageObject =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    originalMessageObject.stanzaID = @"originalMessageID";
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    XMPPMessage *correctedMessage = [self fakeCorrectedMessageWithOriginalMessageID:@"originalMessageID"];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"messageCorrectionEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerOriginalMessageIDForReceivedCorrectedMessage:correctedMessage];
+     }];
+
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XMPPMessageCoreDataStorageObject *correctedMessage =
+        [XMPPMessageCoreDataStorageObject findWithStreamEventID:@"messageCorrectionEventID" inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        
+        XCTAssertTrue([originalMessageObject hasAssociatedCorrectionMessage]);
+        XCTAssertEqualObjects([correctedMessage messageCorrectionID], originalMessageObject.stanzaID);
+    }];
+}
+
+- (void)testMessageCorrectionLookup
+{
+    XMPPMessageCoreDataStorageObject *originalMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    originalMessage.stanzaID = @"originalMessageID";
+    
+    XMPPMessageCoreDataStorageObject *correctedMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    correctedMessage.direction = XMPPMessageDirectionOutgoing;
+    [correctedMessage assignMessageCorrectionID:@"originalMessageID"];
+
+    XMPPMessageCoreDataStorageObject *lookedUpCorrectedMessage =
+    [XMPPMessageCoreDataStorageObject findCorrectionForMessageWithID:@"originalMessageID" inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    
+    XCTAssertEqualObjects(correctedMessage, lookedUpCorrectedMessage);
+}
+
+- (void)testMessageCorrectionStreamContextFetch
+{
+    XMPPMessageCoreDataStorageObject *originalMessageObject =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    originalMessageObject.direction = XMPPMessageDirectionIncoming;
+    originalMessageObject.stanzaID = @"originalMessageID";
+    [originalMessageObject registerIncomingMessageStreamEventID:@"originalMessageEventID"
+                                                      streamJID:[[XMPPMockStream alloc] init].myJID
+                                           streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    XMPPMessage *correctedMessage = [self fakeCorrectedMessageWithOriginalMessageID:@"originalMessageID"];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"messageCorrectionEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerOriginalMessageIDForReceivedCorrectedMessage:correctedMessage];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        NSFetchRequest *fetchRequest =
+        [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:[XMPPMessageContextItemCoreDataStorageObject streamTimestampKindPredicate]
+                                                                     inAscendingOrder:YES
+                                                             fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        NSArray<XMPPMessageContextItemCoreDataStorageObject *> *fetchResult =
+        [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+        
+        XCTAssertEqual(fetchResult.count, 1);
+        XCTAssertEqualObjects(fetchResult.firstObject.message, originalMessageObject);
+    }];
+}
+
+- (XMPPMessage *)fakeCorrectedMessageWithOriginalMessageID:(NSString *)originalMessageID
+{
+    return [[XMPPMessage alloc] initWithXMLString:
+            [NSString stringWithFormat:
+             @"<message to='juliet@capulet.net/balcony' id='good1'>"
+             @"  <body>But soft, what light through yonder window breaks?</body>"
+             @"  <replace id='%@' xmlns='urn:xmpp:message-correct:0'/>"
+             @"</message>", originalMessageID]
+                                            error:NULL];
+}
+
+@end
