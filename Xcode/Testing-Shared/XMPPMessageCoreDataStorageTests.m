@@ -749,3 +749,173 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XMPPMUCLight)
+
+- (void)testIncomingRoomLightMessageHandling
+{
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    mockStream.myJID = [XMPPJID jidWithString:@"crone1@shakespeare.lit"];
+    
+    XMPPMessage *message = [[XMPPMessage alloc] initWithXMLString:
+                            @"<message id='msg111' type='groupchat'"
+                            @"  from='coven@muclight.shakespeare.lit/hag66@shakespeare.lit'"
+                            @"  to='crone1@shakespeare.lit'>"
+                            @"  <body>Harpier cries: 'tis time, 'tis time.</body>"
+                            @"</message>"
+                                                            error:nil];
+    
+    [self expectationForMainThreadStorageManagedObjectsChangeNotificationWithUserInfoKey:NSInsertedObjectsKey count:1 handler:
+     ^BOOL(__kindof NSManagedObject *object) {
+         return [object isKindOfClass:[XMPPMessageCoreDataStorageObject class]];
+     }];
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeReceivedRoomLightMessage:message];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XMPPMessageCoreDataStorageObject *message = [XMPPMessageCoreDataStorageObject findWithUniqueStanzaID:@"msg111"
+                                                                                      inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        
+        XCTAssertNotNil(message);
+        XCTAssertEqualObjects(message.fromJID, [XMPPJID jidWithString:@"coven@muclight.shakespeare.lit/hag66@shakespeare.lit"]);
+        XCTAssertEqualObjects(message.toJID, [XMPPJID jidWithString:@"crone1@shakespeare.lit"]);
+        XCTAssertEqualObjects(message.body, @"Harpier cries: 'tis time, 'tis time.");
+        XCTAssertEqual(message.direction, XMPPMessageDirectionIncoming);
+        XCTAssertEqualObjects(message.stanzaID, @"msg111");
+        XCTAssertEqual(message.type, XMPPMessageTypeGroupchat);
+        XCTAssertEqualObjects([message streamJID], [XMPPJID jidWithString:@"crone1@shakespeare.lit"]);
+        XCTAssertEqualObjects([message streamTimestamp], [NSDate dateWithTimeIntervalSinceReferenceDate:0]);
+    }];
+}
+
+- (void)testOutgoingRoomLightMessageHandling
+{
+    XMPPMessageCoreDataStorageObject *messageObject = [self.storage insertOutgoingMessageStorageObject];
+    messageObject.stanzaID = @"msg111";
+    [messageObject registerOutgoingMessageStreamEventID:@"eventID"];
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+ 
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    mockStream.myJID = [XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"];
+    
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification object:self.storage.mainThreadManagedObjectContext handler:nil];
+    
+    [self provideTransactionForFakeOutgoingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerSentRoomLightMessage];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XMPPMessageCoreDataStorageObject *messageObject = [XMPPMessageCoreDataStorageObject findWithUniqueStanzaID:@"msg111"
+                                                                                            inManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+        
+        XCTAssertEqualObjects([messageObject streamJID], [XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"]);
+        XCTAssertEqualObjects([messageObject streamTimestamp], [NSDate dateWithTimeIntervalSinceReferenceDate:0]);
+    }];
+}
+
+- (void)testPingbackRoomLightMessageHandling
+{
+    XMPPMessageCoreDataStorageObject *sentMessageObject = [self.storage insertOutgoingMessageStorageObject];
+    sentMessageObject.stanzaID = @"msg111";
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    XMPPMockStream *mockStream = [[XMPPMockStream alloc] init];
+    
+    XMPPMessage *pingbackMessage = [[XMPPMessage alloc] initWithXMLString:
+                                    @"<message id='msg111' type='groupchat'"
+                                    @"  from='coven@muclight.shakespeare.lit/hag66@shakespeare.lit'"
+                                    @"  to='crone1@shakespeare.lit'>"
+                                    @"  <body>Harpier cries: 'tis time, 'tis time.</body>"
+                                    @"</message>"
+                                                                    error:nil];
+    
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification
+                              object:self.storage.mainThreadManagedObjectContext
+                             handler:nil].inverted = YES;
+    
+    [self provideTransactionForFakeIncomingMessageEventInStream:mockStream withID:@"eventID" timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0] block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction storeReceivedRoomLightMessage:pingbackMessage];
+     }];
+    
+    [self waitForExpectationsWithTimeout:1 handler:nil];
+}
+
+- (void)testMyIncomingRoomLightMessageCheck
+{
+    XMPPMessageCoreDataStorageObject *myMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    myMessage.direction = XMPPMessageDirectionIncoming;
+    myMessage.type = XMPPMessageTypeGroupchat;
+    myMessage.fromJID = [XMPPJID jidWithString:@"coven@muclight.shakespeare.lit/hag66@shakespeare.lit"];
+    [myMessage registerIncomingMessageStreamEventID:@"myMessageEventID"
+                                        streamJID:[XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"]
+                             streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    
+    XMPPMessageCoreDataStorageObject *otherMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    otherMessage.direction = XMPPMessageDirectionIncoming;
+    otherMessage.type = XMPPMessageTypeGroupchat;
+    otherMessage.fromJID = [XMPPJID jidWithString:@"coven@muclight.shakespeare.lit/crone1@shakespeare.lit"];
+    [otherMessage registerIncomingMessageStreamEventID:@"otherMessageEventID"
+                                        streamJID:[XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"]
+                             streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    
+    XCTAssertTrue([myMessage isMyIncomingRoomLightMessage]);
+    XCTAssertFalse([otherMessage isMyIncomingRoomLightMessage]);
+}
+
+- (void)testRoomLightMessageLookup
+{
+    XMPPMessageCoreDataStorageObject *matchingOutgoingMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    matchingOutgoingMessage.direction = XMPPMessageDirectionOutgoing;
+    matchingOutgoingMessage.toJID = [XMPPJID jidWithString:@"coven@muclight.shakespeare.lit"];
+    [matchingOutgoingMessage registerOutgoingMessageStreamEventID:@"eventID1"];
+    [matchingOutgoingMessage registerOutgoingMessageStreamJID:[XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"]
+                                         streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    
+    XMPPMessageCoreDataStorageObject *otherOutgoingMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    otherOutgoingMessage.direction = XMPPMessageDirectionOutgoing;
+    otherOutgoingMessage.toJID = [XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"];
+    [otherOutgoingMessage registerOutgoingMessageStreamEventID:@"eventID2"];
+    [otherOutgoingMessage registerOutgoingMessageStreamJID:[XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"]
+                                      streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]];
+    
+    XMPPMessageCoreDataStorageObject *matchingIncomingMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    matchingIncomingMessage.direction = XMPPMessageDirectionIncoming;
+    [matchingIncomingMessage registerIncomingMessageStreamEventID:@"eventID3"
+                                                        streamJID:[XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"]
+                                             streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:2]];
+    matchingIncomingMessage.fromJID = [XMPPJID jidWithString:@"coven@muclight.shakespeare.lit/hag66@shakespeare.lit"];
+    
+    XMPPMessageCoreDataStorageObject *otherIncomingMessage =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    otherIncomingMessage.direction = XMPPMessageDirectionIncoming;
+    [otherIncomingMessage registerIncomingMessageStreamEventID:@"eventID4"
+                                                     streamJID:[XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"]
+                                          streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:3]];
+    otherIncomingMessage.fromJID = [XMPPJID jidWithString:@"hag66@shakespeare.lit/pda"];
+    
+    NSPredicate *predicate =
+    [XMPPMessageContextItemCoreDataStorageObject messageRemotePartyJIDPredicateWithValue:[XMPPJID jidWithString:@"coven@muclight.shakespeare.lit"]
+                                                                          compareOptions:XMPPJIDCompareBare];
+    NSFetchRequest *fetchRequest = [XMPPMessageContextItemCoreDataStorageObject requestByTimestampsWithPredicate:predicate
+                                                                                                inAscendingOrder:YES
+                                                                                        fromManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    
+    NSArray<XMPPMessageContextItemCoreDataStorageObject *> *fetchResult =
+    [self.storage.mainThreadManagedObjectContext xmpp_executeForcedSuccessFetchRequest:fetchRequest];
+    
+    XCTAssertEqual(fetchResult.count, 2);
+    XCTAssertEqualObjects(fetchResult[0].message, matchingOutgoingMessage);
+    XCTAssertEqualObjects(fetchResult[1].message, matchingIncomingMessage);
+}
+
+@end
