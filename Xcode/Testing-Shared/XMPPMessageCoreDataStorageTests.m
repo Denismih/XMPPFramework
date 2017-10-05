@@ -1347,3 +1347,96 @@
 }
 
 @end
+
+@implementation XMPPMessageCoreDataStorageTests (XMPPManagedMessagingStorage)
+
+- (void)testManagedMessagingPlainMessageUnspecifiedStatus
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    XCTAssertEqual([message managedMessagingStatus], XMPPManagedMessagingStatusUnspecified);
+}
+
+- (void)testManagedMessagingOutgoingMessageRegistration
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    message.direction = XMPPMessageDirectionOutgoing;
+    [message registerOutgoingMessageStreamEventID:@"managedMessageEventID"];
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+    
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification object:self.storage.mainThreadManagedObjectContext handler:nil];
+    
+    [self provideTransactionForFakeOutgoingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"managedMessageEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerSentManagedMessage];
+     }];
+    
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XCTAssertEqual([message managedMessagingStatus], XMPPManagedMessagingStatusPendingAcknowledgement);
+    }];
+}
+
+- (void)testManagedMessagingSentMessageConfirmation
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    message.stanzaID = @"confirmedMessageID";
+    message.direction = XMPPMessageDirectionOutgoing;
+    [message registerOutgoingMessageStreamEventID:@"confirmedMessageEventID"];
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification object:self.storage.mainThreadManagedObjectContext handler:nil];
+
+    [self provideTransactionForFakeOutgoingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"confirmedMessageEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerSentManagedMessage];
+     }];
+
+    [self waitForExpectationsWithTimeout:5 handler:nil];
+
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification object:self.storage.mainThreadManagedObjectContext handler:nil];
+
+    [self.storage registerAcknowledgedManagedMessageIDs:@[@"confirmedMessageID"]];
+
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XCTAssertEqual([message managedMessagingStatus], XMPPManagedMessagingStatusAcknowledged);
+    }];
+}
+
+- (void)testManagedMessagingFailureRegistration
+{
+    XMPPMessageCoreDataStorageObject *message =
+    [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    message.direction = XMPPMessageDirectionOutgoing;
+    [message registerOutgoingMessageStreamEventID:@"unconfirmedMessageEventID"];
+    [self.storage.mainThreadManagedObjectContext save:NULL];
+
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification object:self.storage.mainThreadManagedObjectContext handler:nil];
+
+    [self provideTransactionForFakeOutgoingMessageEventInStream:[[XMPPMockStream alloc] init]
+                                                         withID:@"unconfirmedMessageEventID"
+                                                      timestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                                          block:
+     ^(XMPPMessageCoreDataStorageTransaction *transaction) {
+         [transaction registerSentManagedMessage];
+     }];
+
+    [self waitForExpectationsWithTimeout:5 handler:nil];
+
+    [self expectationForNotification:NSManagedObjectContextObjectsDidChangeNotification object:self.storage.mainThreadManagedObjectContext handler:nil];
+
+    [self.storage registerFailureForUnacknowledgedManagedMessages];
+
+    [self waitForExpectationsWithTimeout:5 handler:^(NSError * _Nullable error) {
+        XCTAssertEqual([message managedMessagingStatus], XMPPManagedMessagingStatusUnacknowledged);
+    }];
+}
+
+@end
