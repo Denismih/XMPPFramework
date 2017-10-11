@@ -14,6 +14,7 @@ static NSString *const XMPPRoomLightConfiguration = @"urn:xmpp:muclight:0#config
 static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 
 @interface XMPPRoomLight() {
+    BOOL shouldHandleMemberMessagesWithoutBody;
 	NSString *roomname;
 	NSString *subject;
     NSArray<NSXMLElement*> *knownMembersList;
@@ -75,6 +76,33 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 		dispatch_sync(moduleQueue, block);
 	
 	[super deactivate];
+}
+
+- (BOOL)shouldHandleMemberMessagesWithoutBody
+{
+    __block BOOL result;
+    dispatch_block_t block = ^{ @autoreleasepool {
+        result = shouldHandleMemberMessagesWithoutBody;
+    }};
+    
+    if (dispatch_get_specific(moduleQueueTag))
+        block();
+    else
+        dispatch_sync(moduleQueue, block);
+    
+    return result;
+}
+
+- (void)setShouldHandleMemberMessagesWithoutBody:(BOOL)newValue
+{
+    dispatch_block_t block = ^{ @autoreleasepool {
+        shouldHandleMemberMessagesWithoutBody = newValue;
+    }};
+    
+    if (dispatch_get_specific(moduleQueueTag))
+        block();
+    else
+        dispatch_async(moduleQueue, block);
 }
 
 - (nonnull NSString *)roomname {
@@ -645,9 +673,9 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 	// Is this a message we need to store (a chat message)?
 	//
 	// We store messages that from is full room-id@domain/user-who-sends-message
-	// and that have something in the body
+    // and that have something in the body (unless empty messages are allowed)
 
-	if ([from isFull] && [message isGroupChatMessageWithBody]) {
+	if ([from isFull] && [message isGroupChatMessage] && (self.shouldHandleMemberMessagesWithoutBody || [message isMessageWithBody])) {
 		[xmppRoomLightStorage handleIncomingMessage:message room:self];
 		[multicastDelegate xmppRoomLight:self didReceiveMessage:message];
 	}else if(destroyRoom){
@@ -675,7 +703,7 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 	// A message to all recipients MUST be of type groupchat.
 	// A message to an individual recipient would have a <body/>.
 
-	if ([message isGroupChatMessageWithBody]){
+	if ([message isGroupChatMessage] && (self.shouldHandleMemberMessagesWithoutBody || [message isMessageWithBody])) {
 		[xmppRoomLightStorage handleOutgoingMessage:message room:self];
 	}
 }

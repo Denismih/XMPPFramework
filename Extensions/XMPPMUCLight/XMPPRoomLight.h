@@ -21,6 +21,7 @@
 
 @property (readonly, nonatomic, strong, nonnull) XMPPJID *roomJID;
 @property (readonly, nonatomic, strong, nonnull) NSString *domain;
+@property (assign) BOOL shouldHandleMemberMessagesWithoutBody;
 
 - (nonnull NSString *)roomname;
 - (nonnull NSString *)subject;
