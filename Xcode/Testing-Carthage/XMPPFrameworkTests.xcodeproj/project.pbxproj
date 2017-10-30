@@ -64,6 +64,9 @@
 		DD26F5881F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD26F5871F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m */; };
 		DD26F5891F7CF1B400F54F18 /* XMPPOneToOneChatTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD26F5871F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m */; };
 		DD26F58A1F7CF1B400F54F18 /* XMPPOneToOneChatTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD26F5871F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m */; };
+        DD4003F91F7528A90078D144 /* XMPPDelayedDeliveryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */; };
+		DD4003FA1F7528B40078D144 /* XMPPDelayedDeliveryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */; };
+		DD4003FB1F7528B40078D144 /* XMPPDelayedDeliveryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */; };
 		DD4003DC1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */; };
 		DD4003DD1F7527D70078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */; };
 		DD4003DE1F7527D70078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */; };
@@ -140,6 +143,7 @@
 		D9DCD7151E625C560010D1C7 /* XMPPFrameworkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = XMPPFrameworkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D9E35E6F1D90B894002E7CF7 /* OMEMOElementTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = OMEMOElementTests.m; path = "../Testing-Shared/OMEMOElementTests.m"; sourceTree = SOURCE_ROOT; };
 		DD26F5871F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XMPPOneToOneChatTests.m; sourceTree = "<group>"; };
+		DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XMPPDelayedDeliveryTests.m; sourceTree = "<group>"; };
 		DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XMPPMessageCoreDataStorageTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -211,6 +215,7 @@
 				D973A07A1D2F18040096F3ED /* XMPPURITests.m */,
 				D973A07B1D2F18040096F3ED /* XMPPvCardTests.m */,
 				DD26F5871F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m */,
+				DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */,
 				DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */,
 				63F50D971C60208200CA0201 /* Info.plist */,
 			);
@@ -388,6 +393,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D973A07C1D2F18040096F3ED /* CapabilitiesHashingTest.m in Sources */,
+				DD4003F91F7528A90078D144 /* XMPPDelayedDeliveryTests.m in Sources */,
 				DD4003DC1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */,
 				D973A0811D2F18040096F3ED /* XMPPMUCLightTests.m in Sources */,
 				D973A07D1D2F18040096F3ED /* EncodeDecodeTest.m in Sources */,
@@ -414,6 +420,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D9DCD3D51E6255E10010D1C7 /* CapabilitiesHashingTest.m in Sources */,
+				DD4003FA1F7528B40078D144 /* XMPPDelayedDeliveryTests.m in Sources */,
 				DD4003DD1F7527D70078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */,
 				D9DCD3D61E6255E10010D1C7 /* XMPPMUCLightTests.m in Sources */,
 				D9DCD3D71E6255E10010D1C7 /* EncodeDecodeTest.m in Sources */,
@@ -440,6 +447,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D9DCD6FE1E625C560010D1C7 /* CapabilitiesHashingTest.m in Sources */,
+				DD4003FB1F7528B40078D144 /* XMPPDelayedDeliveryTests.m in Sources */,
 				DD4003DE1F7527D70078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */,
 				D9DCD6FF1E625C560010D1C7 /* XMPPMUCLightTests.m in Sources */,
 				D9DCD7001E625C560010D1C7 /* EncodeDecodeTest.m in Sources */,
