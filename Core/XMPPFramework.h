@@ -159,6 +159,7 @@
 #import "XMPPRoomLightCoreDataStorage.h"
 #import "XMPPRoomLightCoreDataStorageProtected.h"
 #import "XMPPRoomLightMessageCoreDataStorageObject.h"
+#import "XMPPOneToOneChat.h"
 #import "XMPPMessageCoreDataStorage.h"
 #import "XMPPMessageCoreDataStorageObject.h"
 #import "XMPPMessageCoreDataStorageObject+Protected.h"
