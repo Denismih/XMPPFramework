@@ -67,6 +67,9 @@
         DD4003F91F7528A90078D144 /* XMPPDelayedDeliveryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */; };
 		DD4003FA1F7528B40078D144 /* XMPPDelayedDeliveryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */; };
 		DD4003FB1F7528B40078D144 /* XMPPDelayedDeliveryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */; };
+        DDA11A4C1F8518AE00591D1B /* XMPPManagedMessagingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DDA11A4B1F8518AE00591D1B /* XMPPManagedMessagingTests.m */; };
+		DDA11A4D1F8518BA00591D1B /* XMPPManagedMessagingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DDA11A4B1F8518AE00591D1B /* XMPPManagedMessagingTests.m */; };
+		DDA11A4E1F8518BB00591D1B /* XMPPManagedMessagingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DDA11A4B1F8518AE00591D1B /* XMPPManagedMessagingTests.m */; };
 		DD4003DC1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */; };
 		DD4003DD1F7527D70078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */; };
 		DD4003DE1F7527D70078D144 /* XMPPMessageCoreDataStorageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */; };
@@ -144,6 +147,7 @@
 		D9E35E6F1D90B894002E7CF7 /* OMEMOElementTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = OMEMOElementTests.m; path = "../Testing-Shared/OMEMOElementTests.m"; sourceTree = SOURCE_ROOT; };
 		DD26F5871F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XMPPOneToOneChatTests.m; sourceTree = "<group>"; };
 		DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XMPPDelayedDeliveryTests.m; sourceTree = "<group>"; };
+		DDA11A4B1F8518AE00591D1B /* XMPPManagedMessagingTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XMPPManagedMessagingTests.m; sourceTree = "<group>"; };
 		DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XMPPMessageCoreDataStorageTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -216,6 +220,7 @@
 				D973A07B1D2F18040096F3ED /* XMPPvCardTests.m */,
 				DD26F5871F7CF1AE00F54F18 /* XMPPOneToOneChatTests.m */,
 				DD4003F81F7528A90078D144 /* XMPPDelayedDeliveryTests.m */,
+                DDA11A4B1F8518AE00591D1B /* XMPPManagedMessagingTests.m */,
 				DD4003DB1F7527B10078D144 /* XMPPMessageCoreDataStorageTests.m */,
 				63F50D971C60208200CA0201 /* Info.plist */,
 			);
@@ -404,6 +409,7 @@
 				D97509281D9C82DB002E6F51 /* OMEMOServerTests.m in Sources */,
 				D99C5E0D1D99C48100FB068A /* OMEMOModuleTests.m in Sources */,
 				D973A0861D2F18040096F3ED /* XMPPURITests.m in Sources */,
+				DDA11A4C1F8518AE00591D1B /* XMPPManagedMessagingTests.m in Sources */,
 				D973A07F1D2F18040096F3ED /* XMPPMessageArchiveManagementTests.m in Sources */,
 				D973A07E1D2F18040096F3ED /* XMPPHTTPFileUploadTests.m in Sources */,
 				D973A0821D2F18040096F3ED /* XMPPPushTests.swift in Sources */,
@@ -431,6 +437,7 @@
 				D9DCD3DB1E6255E10010D1C7 /* OMEMOServerTests.m in Sources */,
 				D9DCD3DC1E6255E10010D1C7 /* OMEMOModuleTests.m in Sources */,
 				D9DCD3DD1E6255E10010D1C7 /* XMPPURITests.m in Sources */,
+				DDA11A4D1F8518BA00591D1B /* XMPPManagedMessagingTests.m in Sources */,
 				D9DCD3DE1E6255E10010D1C7 /* XMPPMessageArchiveManagementTests.m in Sources */,
 				D9DCD3DF1E6255E10010D1C7 /* XMPPHTTPFileUploadTests.m in Sources */,
 				D9DCD3E01E6255E10010D1C7 /* XMPPPushTests.swift in Sources */,
@@ -458,6 +465,7 @@
 				D9DCD7041E625C560010D1C7 /* OMEMOServerTests.m in Sources */,
 				D9DCD7051E625C560010D1C7 /* OMEMOModuleTests.m in Sources */,
 				D9DCD7061E625C560010D1C7 /* XMPPURITests.m in Sources */,
+				DDA11A4E1F8518BB00591D1B /* XMPPManagedMessagingTests.m in Sources */,
 				D9DCD7071E625C560010D1C7 /* XMPPMessageArchiveManagementTests.m in Sources */,
 				D9DCD7081E625C560010D1C7 /* XMPPHTTPFileUploadTests.m in Sources */,
 				D9DCD7091E625C560010D1C7 /* XMPPPushTests.swift in Sources */,
