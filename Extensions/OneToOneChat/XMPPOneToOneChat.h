@@ -15,10 +15,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @optional
 /// Notifies the delegate that a chat message has been received in the stream.
-- (void)xmppOneToOneChat:(XMPPOneToOneChat *)xmppOneToOneChat didReceiveChatMessage:(XMPPMessage *)message;
+- (void)xmppOneToOneChat:(XMPPOneToOneChat *)xmppOneToOneChat didReceiveChatMessage:(XMPPMessage *)message
+NS_SWIFT_NAME(xmppOneToOneChat(_:didReceiveChatMessage:));
 
 /// Notifies the delegate that a chat message has been sent in the stream.
-- (void)xmppOneToOneChat:(XMPPOneToOneChat *)xmppOneToOneChat didSendChatMessage:(XMPPMessage *)message;
+- (void)xmppOneToOneChat:(XMPPOneToOneChat *)xmppOneToOneChat didSendChatMessage:(XMPPMessage *)message
+NS_SWIFT_NAME(xmppOneToOneChat(_:didSendChatMessage:));
 
 @end
 
