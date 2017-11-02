@@ -1152,7 +1152,8 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
  *
  * For more details, please refer to @c XMPPElementEvent documentation.
  */
-- (void)xmppStream:(XMPPStream *)sender didFinishProcessingElementEvent:(XMPPElementEvent *)event;
+- (void)xmppStream:(XMPPStream *)sender didFinishProcessingElementEvent:(XMPPElementEvent *)event
+NS_SWIFT_NAME(xmppStream(_:didFinishProcessing:));
 
 /**
  * This method is called if the XMPP Stream's jid changes.
