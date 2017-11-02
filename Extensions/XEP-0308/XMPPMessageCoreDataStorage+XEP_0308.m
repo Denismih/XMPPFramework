@@ -18,7 +18,8 @@ static XMPPMessageContextStringItemTag const XMPPMessageContextCorrectionIDTag =
 - (void)registerOriginalMessageIDForReceivedCorrectedMessage:(XMPPMessage *)message
 {
     [self scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
-         [messageObject appendMessageCorrectionContextWithID:[message correctedMessageID]];
+        NSAssert(messageObject.direction == XMPPMessageDirectionIncoming, @"This action is only allowed for incoming message objects");
+        [messageObject appendMessageCorrectionContextWithID:[message correctedMessageID]];
     }];
 }
 

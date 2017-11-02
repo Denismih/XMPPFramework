@@ -8,14 +8,24 @@ static XMPPMessageContextTimestampItemTag const XMPPMessageContextDelayedDeliver
 static XMPPMessageContextJIDItemTag const XMPPMessageContextDelayedDeliveryFromTag = @"XMPPMessageContextDelayedDeliveryFrom";
 static XMPPMessageContextStringItemTag const XMPPMessageContextDelayedDeliveryReasonDescriptionTag = @"XMPPMessageContextDelayedDeliveryReasonDescription";
 
+@interface XMPPMessageCoreDataStorageObject (XEP_0203_Private)
+
+- (void)appendDelayedDeliveryContextWithDate:(NSDate *)delayedDeliveryDate
+                                        from:(XMPPJID *)delayedDeliveryFrom
+                           reasonDescription:(NSString *)delayedDeliveryReasonDescription;
+
+@end
+
 @implementation XMPPMessageCoreDataStorageTransaction (XEP_0203)
 
 - (void)registerDelayedDeliveryForReceivedMessage:(XMPPMessage *)message
 {
     [self scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
-        [messageObject setDelayedDeliveryDate:[message delayedDeliveryDate]
-                                         from:[message delayedDeliveryFrom]
-                            reasonDescription:[message delayedDeliveryReasonDescription]];
+        NSAssert(messageObject.direction == XMPPMessageDirectionIncoming, @"This action is only allowed for incoming message objects");
+        
+        [messageObject appendDelayedDeliveryContextWithDate:[message delayedDeliveryDate]
+                                                       from:[message delayedDeliveryFrom]
+                                          reasonDescription:[message delayedDeliveryReasonDescription]];
     }];
 }
 
@@ -45,6 +55,12 @@ static XMPPMessageContextStringItemTag const XMPPMessageContextDelayedDeliveryRe
 }
 
 - (void)setDelayedDeliveryDate:(NSDate *)delayedDeliveryDate from:(XMPPJID *)delayedDeliveryFrom reasonDescription:(NSString *)delayedDeliveryReasonDescription
+{
+    NSAssert(self.direction == XMPPMessageDirectionOutgoing, @"This action is only allowed for outgoing message objects");
+    [self appendDelayedDeliveryContextWithDate:delayedDeliveryDate from:delayedDeliveryFrom reasonDescription:delayedDeliveryReasonDescription];
+}
+
+- (void)appendDelayedDeliveryContextWithDate:(NSDate *)delayedDeliveryDate from:(XMPPJID *)delayedDeliveryFrom reasonDescription:(NSString *)delayedDeliveryReasonDescription
 {
     NSAssert(![self delayedDeliveryDate], @"Delayed delivery information is already present");
     

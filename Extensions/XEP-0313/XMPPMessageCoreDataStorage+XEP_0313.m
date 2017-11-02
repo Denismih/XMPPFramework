@@ -58,6 +58,8 @@ static XMPPMessageContextTimestampItemTag const XMPPMessageContextMAMDeletedResu
 - (void)storeMessageArchiveQueryResultItem:(NSXMLElement *)resultItem inMode:(XMPPMessageArchiveQueryResultStorageMode)storageMode
 {
     [self scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+        NSAssert(messageObject.direction == XMPPMessageDirectionIncoming, @"This action is only allowed for incoming message objects");
+        
         if ([[self class] isMessageArchiveQueryResultItem:resultItem alreadyStoredInManagedObjectContext:messageObject.managedObjectContext]) {
             [messageObject.managedObjectContext deleteObject:messageObject];
             return;

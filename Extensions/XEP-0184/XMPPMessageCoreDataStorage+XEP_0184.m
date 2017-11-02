@@ -12,6 +12,8 @@ static XMPPMessageContextStringItemTag const XMPPMessageContextDeliveryReceiptRe
 - (void)storeReceivedDeliveryReceiptResponseMessage:(XMPPMessage *)message
 {
     [self scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+        NSAssert(messageObject.direction == XMPPMessageDirectionIncoming, @"This action is only allowed for incoming message objects");
+        
         [messageObject registerIncomingMessageCore:message];
         
         NSString *deliveredMessageID = [message receiptResponseID];

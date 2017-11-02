@@ -926,6 +926,8 @@
 {
     XMPPMessageCoreDataStorageObject *message =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    message.direction = XMPPMessageDirectionOutgoing;
+    
     [message setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
                                from:[XMPPJID jidWithString:@"domain"]
                   reasonDescription:@"Test"];
@@ -974,17 +976,17 @@
 {
     XMPPMessageCoreDataStorageObject *shorterDelayMessage =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
-    shorterDelayMessage.direction = XMPPMessageDirectionIncoming;
-    [shorterDelayMessage registerIncomingMessageStreamEventID:@"earlierEventID"
-                                                    streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
-                                         streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    shorterDelayMessage.direction = XMPPMessageDirectionOutgoing;
+    [shorterDelayMessage registerOutgoingMessageStreamEventID:@"earlierEventID"];
+    [shorterDelayMessage registerOutgoingMessageStreamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                                     streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
     
     XMPPMessageCoreDataStorageObject *longerDelayMessage =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
-    longerDelayMessage.direction = XMPPMessageDirectionIncoming;
-    [longerDelayMessage registerIncomingMessageStreamEventID:@"laterEventID"
-                                                   streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
-                                        streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]];
+    longerDelayMessage.direction = XMPPMessageDirectionOutgoing;
+    [longerDelayMessage registerOutgoingMessageStreamEventID:@"laterEventID"];
+    [longerDelayMessage registerOutgoingMessageStreamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                                    streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]];
     
     [shorterDelayMessage setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:-1] from:nil reasonDescription:@"Shorter delay"];
     [longerDelayMessage setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:-2] from:nil reasonDescription:@"Longer delay"];
@@ -1006,18 +1008,18 @@
 {
     XMPPMessageCoreDataStorageObject *liveMessage =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
-    liveMessage.direction = XMPPMessageDirectionIncoming;
+    liveMessage.direction = XMPPMessageDirectionOutgoing;
     liveMessage.stanzaID = @"liveMessageID";
-    [liveMessage registerIncomingMessageStreamEventID:@"liveMessageEventID"
-                                            streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
-                                 streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
+    [liveMessage registerOutgoingMessageStreamEventID:@"liveMessageEventID"];
+    [liveMessage registerOutgoingMessageStreamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                             streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:0]];
     
     XMPPMessageCoreDataStorageObject *delayedDeliveryMessage =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
-    delayedDeliveryMessage.direction = XMPPMessageDirectionIncoming;
-    [delayedDeliveryMessage registerIncomingMessageStreamEventID:@"delayedDeliveryMessageEventID"
-                                                       streamJID:[XMPPJID jidWithString:@"juliet@example.com"]
-                                            streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]];
+    delayedDeliveryMessage.direction = XMPPMessageDirectionOutgoing;
+    [delayedDeliveryMessage registerOutgoingMessageStreamEventID:@"delayedDeliveryMessageEventID"];
+    [delayedDeliveryMessage registerOutgoingMessageStreamJID:[XMPPJID jidWithString:@"juliet@example.com"]
+                                        streamEventTimestamp:[NSDate dateWithTimeIntervalSinceReferenceDate:1]];
     
     [delayedDeliveryMessage setDelayedDeliveryDate:[NSDate dateWithTimeIntervalSinceReferenceDate:-1] from:nil reasonDescription:nil];
     
@@ -1521,10 +1523,13 @@
 {
     XMPPMessageCoreDataStorageObject *resourceWithDescriptionMessage =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
-    [resourceWithDescriptionMessage assignOutOfBandResourceWithInternalID:@"resourceID1" description:@"A license to Jabber!"];
+    resourceWithDescriptionMessage.direction = XMPPMessageDirectionOutgoing;
     
     XMPPMessageCoreDataStorageObject *resourceWithoutDescriptionMessage =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    resourceWithoutDescriptionMessage.direction = XMPPMessageDirectionOutgoing;
+    
+    [resourceWithDescriptionMessage assignOutOfBandResourceWithInternalID:@"resourceID1" description:@"A license to Jabber!"];
     [resourceWithoutDescriptionMessage assignOutOfBandResourceWithInternalID:@"resourceID2" description:nil];
     
     XCTAssertEqualObjects([resourceWithDescriptionMessage outOfBandResourceInternalID], @"resourceID1");
@@ -1537,6 +1542,8 @@
 {
     XMPPMessageCoreDataStorageObject *message =
     [XMPPMessageCoreDataStorageObject xmpp_insertNewObjectInManagedObjectContext:self.storage.mainThreadManagedObjectContext];
+    message.direction = XMPPMessageDirectionOutgoing;
+    
     [message assignOutOfBandResourceWithInternalID:@"resourceID1" description:@"A license to Jabber!"];
     [message setAssignedOutOfBandResourceURIString:@"http://www.jabber.org/images/psa-license.jpg"];
     

@@ -7,6 +7,8 @@
 - (void)storeReceivedRoomLightMessage:(XMPPMessage *)message
 {
     [self scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+        NSAssert(messageObject.direction == XMPPMessageDirectionIncoming, @"This action is only allowed for incoming message objects");
+        
         if (![[self class] isEchoedRoomLightMessage:message inManagedObjectContext:messageObject.managedObjectContext]) {
             [messageObject registerIncomingMessageCore:message];
         } else {
@@ -18,6 +20,7 @@
 - (void)registerSentRoomLightMessage
 {
     [self scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
+        NSAssert(messageObject.direction == XMPPMessageDirectionOutgoing, @"This action is only allowed for outgoing message objects");
         // No additional processing required
     }];
 }

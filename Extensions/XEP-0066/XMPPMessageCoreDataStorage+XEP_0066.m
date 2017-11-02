@@ -6,12 +6,19 @@ static XMPPMessageContextStringItemTag const XMPPMessageContextOutOfBandResource
 static XMPPMessageContextStringItemTag const XMPPMessageContextOutOfBandResourceURIStringTag = @"XMPPMessageContextOutOfBandResourceURIString";
 static XMPPMessageContextStringItemTag const XMPPMessageContextOutOfBandResourceDescriptionTag = @"XMPPMessageContextOutOfBandResourceDescription";
 
+@interface XMPPMessageCoreDataStorageObject (XEP_0066_Private)
+
+- (void)appendOutOfBandResourceContextWithInternalID:(NSString *)internalID description:(NSString *)resourceDescription;
+
+@end
+
 @implementation XMPPMessageCoreDataStorageTransaction (XEP_0066)
 
 - (void)registerOutOfBandResourceForReceivedMessage:(XMPPMessage *)message
 {
     [self scheduleStorageUpdateWithBlock:^(XMPPMessageCoreDataStorageObject * _Nonnull messageObject) {
-        [messageObject assignOutOfBandResourceWithInternalID:[NSUUID UUID].UUIDString description:[message outOfBandDesc]];
+        NSAssert(messageObject.direction == XMPPMessageDirectionIncoming, @"This action is only allowed for incoming message objects");
+        [messageObject appendOutOfBandResourceContextWithInternalID:[NSUUID UUID].UUIDString description:[message outOfBandDesc]];
         [messageObject setAssignedOutOfBandResourceURIString:[message outOfBandURI]];
     }];
 }
@@ -43,13 +50,8 @@ static XMPPMessageContextStringItemTag const XMPPMessageContextOutOfBandResource
 
 - (void)assignOutOfBandResourceWithInternalID:(NSString *)internalID description:(NSString *)resourceDescription
 {
-    NSAssert(![self outOfBandResourceInternalID], @"Out of band resource is already assigned");
-    
-    XMPPMessageContextCoreDataStorageObject *outOfBandResourceContext = [self appendContextElement];
-    [outOfBandResourceContext appendStringItemWithTag:XMPPMessageContextOutOfBandResourceIDTag value:internalID];
-    if (resourceDescription) {
-        [outOfBandResourceContext appendStringItemWithTag:XMPPMessageContextOutOfBandResourceDescriptionTag value:resourceDescription];
-    }
+    NSAssert(self.direction == XMPPMessageDirectionOutgoing, @"This action is only allowed for outgoing message objects");
+    [self appendOutOfBandResourceContextWithInternalID:internalID description:resourceDescription];
 }
 
 - (void)setAssignedOutOfBandResourceURIString:(NSString *)resourceURIString
@@ -62,6 +64,17 @@ static XMPPMessageContextStringItemTag const XMPPMessageContextOutOfBandResource
     NSAssert(![outOfBandResourceContext stringItemValueForTag:XMPPMessageContextOutOfBandResourceURIStringTag], @"Out of band resource URI is already set");
     
     [outOfBandResourceContext appendStringItemWithTag:XMPPMessageContextOutOfBandResourceURIStringTag value:resourceURIString];
+}
+
+- (void)appendOutOfBandResourceContextWithInternalID:(NSString *)internalID description:(NSString *)resourceDescription
+{
+    NSAssert(![self outOfBandResourceInternalID], @"Out of band resource is already assigned");
+    
+    XMPPMessageContextCoreDataStorageObject *outOfBandResourceContext = [self appendContextElement];
+    [outOfBandResourceContext appendStringItemWithTag:XMPPMessageContextOutOfBandResourceIDTag value:internalID];
+    if (resourceDescription) {
+        [outOfBandResourceContext appendStringItemWithTag:XMPPMessageContextOutOfBandResourceDescriptionTag value:resourceDescription];
+    }
 }
 
 @end
