@@ -99,9 +99,12 @@ static NSString * const XMPPElementEventCompletionKeyPath = @"processingComplete
     });
 }
 
-- (void)unregisterTransactionForMessageEvent:(XMPPElementEvent *)event
+- (void)unregisterTransactionForMessageEvent:(XMPPElementEvent *)event withObservationContext:(void *)observationContext
 {
     dispatch_async(self.transactionIndexQueue, ^{
+        XMPPMessageCoreDataStorageTransaction *transaction = self.transactionIndex[event.uniqueID];
+        NSAssert(transaction, @"No transaction registered for the given event");
+        [event removeObserver:transaction forKeyPath:XMPPElementEventCompletionKeyPath context:observationContext];
         [self.transactionIndex removeObjectForKey:event.uniqueID];
     });
 }
@@ -131,10 +134,12 @@ static NSString * const XMPPElementEventCompletionKeyPath = @"processingComplete
     if (context == XMPPMessageCoreDataStorageIncomingEventObservationContext) {
         if ([keyPath isEqualToString:XMPPElementEventCompletionKeyPath] && [change[NSKeyValueChangeNewKey] isEqualToNumber:@YES]) {
             [self observeProcessingCompletionForIncomingMessageEvent:object];
+            [self.storage unregisterTransactionForMessageEvent:object withObservationContext:context];
         }
     } else if (context == XMPPMessageCoreDataStorageOutgoingEventObservationContext) {
         if ([keyPath isEqualToString:XMPPElementEventCompletionKeyPath] && [change[NSKeyValueChangeNewKey] isEqualToNumber:@YES]) {
             [self observeProcessingCompletionForOutgoingMessageEvent:object];
+            [self.storage unregisterTransactionForMessageEvent:object withObservationContext:context];
         }
     } else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
@@ -156,8 +161,6 @@ static NSString * const XMPPElementEventCompletionKeyPath = @"processingComplete
             updateBlock(insertedMessageObject);
         }
     }];
-    
-    [self.storage unregisterTransactionForMessageEvent:event];
 }
 
 - (void)observeProcessingCompletionForOutgoingMessageEvent:(XMPPElementEvent *)event
@@ -174,8 +177,6 @@ static NSString * const XMPPElementEventCompletionKeyPath = @"processingComplete
             updateBlock(existingMessageObject);
         }
     }];
-    
-    [self.storage unregisterTransactionForMessageEvent:event];
 }
 
 @end
