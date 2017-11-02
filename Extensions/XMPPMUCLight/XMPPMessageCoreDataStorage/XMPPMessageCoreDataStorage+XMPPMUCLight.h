@@ -8,12 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Stores core XMPP properties for the received MUC Light message.
 - (void)storeReceivedRoomLightMessage:(XMPPMessage *)message;
 
-/**
- Registers outgoing stream event information for the chat message processed in the transaction.
- 
- A prerequisite is that the application registers the event ID for the respective storage object before sending the message,
- see registerOutgoingMessageStreamEventID: method on XMPPMessageCoreDataStorageObject.
- */
+/// Registers outgoing stream event information for the chat message processed in the transaction.
 - (void)registerSentRoomLightMessage;
 
 @end

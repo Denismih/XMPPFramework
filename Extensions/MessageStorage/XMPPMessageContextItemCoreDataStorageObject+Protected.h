@@ -10,7 +10,7 @@ typedef NS_ENUM(int16_t, XMPPMessageDirection);
 /// A tag assigned to a JID auxiliary value.
 typedef NSString * XMPPMessageContextJIDItemTag NS_EXTENSIBLE_STRING_ENUM;
 
-/// An tag assigned to an auxiliary marker.
+/// A tag assigned to an auxiliary marker.
 typedef NSString * XMPPMessageContextMarkerItemTag NS_EXTENSIBLE_STRING_ENUM;
 
 /// A tag assigned to a string auxiliary value.

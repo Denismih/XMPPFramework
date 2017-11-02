@@ -16,7 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// @brief Returns the message object that contains a XEP-0308 correction of a message with the provided element ID.
 /// @see findCorrectionForMessageWithID:inManagedObjectContext:
 + (nullable XMPPMessageCoreDataStorageObject *)findCorrectionForMessageWithID:(NSString *)originalMessageID
-                                                       inManagedObjectContext:(NSManagedObjectContext *)managedObjectContext;
+                                                       inManagedObjectContext:(NSManagedObjectContext *)managedObjectContext
+NS_SWIFT_NAME(findCorrection(forMessageWithID:in:));
 
 /**
  Returns YES if the storage contains a XEP-0308 correction of the given message object.

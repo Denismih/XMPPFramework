@@ -15,7 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Returns the message object that contains a XEP-0184 delivery receipt response for the provided delivered message ID.
 + (nullable XMPPMessageCoreDataStorageObject *)findDeliveryReceiptResponseForMessageWithID:(NSString *)messageID
-                                                                    inManagedObjectContext:(NSManagedObjectContext *)managedObjectContext;
+                                                                    inManagedObjectContext:(NSManagedObjectContext *)managedObjectContext
+NS_SWIFT_NAME(findDeliveryReceiptResponse(forMessageWithID:in:));
 
 /// Returns @c YES if the storage contains a XEP-0184 delivery receipt response message for the given message object.
 - (BOOL)hasAssociatedDeliveryReceiptResponseMessage;
