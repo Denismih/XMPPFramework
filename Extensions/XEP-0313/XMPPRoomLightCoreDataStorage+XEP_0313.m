@@ -46,7 +46,7 @@
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
     fetchRequest.entity = messageEntity;
     fetchRequest.predicate = predicate;
-    fetchRequest.fetchLimit = 1;
+//    fetchRequest.fetchLimit = 1;
     
     NSArray *results = [moc executeFetchRequest:fetchRequest error:NULL];
     
