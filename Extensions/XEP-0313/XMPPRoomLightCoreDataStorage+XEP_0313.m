@@ -73,10 +73,17 @@
     for (NSXMLNode *node in self.children) {
         if (node.kind == NSXMLElementKind && [node.name isEqualToString:@"x"]) {
             // Returning XML strings as equality test in KissXML is based on comparing node pointers
-            xElementStringsDictionary[node.name] = node.XMLString;
+            for (NSXMLNode *nodeURL in node.children) {
+                if ([nodeURL.name isEqualToString:@"url"]) {
+                    xElementStringsDictionary[nodeURL.name] = nodeURL.XMLString;
+                }
+            }
+            
         }
     }
-    
+    if (xElementStringsDictionary.count == 0) {
+        xElementStringsDictionary[@"x"] = @"x"; //to set non unique for affilation messages
+    }
     return xElementStringsDictionary;
 }
 
