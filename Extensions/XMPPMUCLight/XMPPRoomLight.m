@@ -290,7 +290,7 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
     //        </iq>
     
     dispatch_block_t block = ^{ @autoreleasepool {
-        _roomJID = self.roomJID
+        _roomJID = self.roomJID;
         //[XMPPJID jidWithUser:[@"channel-" stringByAppendingString:[XMPPStream generateUUID]]
                               //   domain:self.domain
                            //    resource:nil];
