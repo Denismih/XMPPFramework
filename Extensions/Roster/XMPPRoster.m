@@ -692,7 +692,7 @@ enum XMPPRosterFlags
 		if ([self _requestedRoster])
 		{
 			// We've already requested the roster from the server.
-			return;
+			//return;  // request anyway!!!
 		}
 		
 		// <iq type="get">
@@ -733,7 +733,7 @@ enum XMPPRosterFlags
         NSXMLElement *query = [iq elementForName:@"query" xmlns:@"jabber:iq:roster"];
         NSString * version = [query attributeStringValueForName:@"ver"];
         
-		BOOL hasRoster = [self hasRoster];
+        BOOL hasRoster = NO;//[self hasRoster]; //handele query anyway!!!
 		
 		if (!hasRoster)
 		{
