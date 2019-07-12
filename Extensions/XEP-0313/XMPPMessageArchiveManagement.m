@@ -211,6 +211,14 @@ static NSString *const QueryIdAttributeName = @"queryid";
 
 
 - (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message {
+    //added  case for retransmitted messages to check unique ***
+    NSXMLElement *retransmission = [message elementForName:@"retransmission" xmlns:@"community:xmpp:retransmission:0"];
+    if (retransmission) {
+        XMPPLogWarn(@"Received retransmission message");
+        [multicastDelegate xmppMessageArchiveManagement:self didReceiveMAMMessage:message];
+        return;
+    }
+    //*** 
     NSXMLElement *result = [message elementForName:@"result" xmlns:XMLNS_XMPP_MAM];
     BOOL forwarded = result.hasForwardedStanza;
     if (!forwarded) {
