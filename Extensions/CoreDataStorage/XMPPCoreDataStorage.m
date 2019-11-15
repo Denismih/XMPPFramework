@@ -445,25 +445,27 @@ static NSMutableSet *databaseFileNames;
 
 - (NSString *)persistentStoreDirectory
 {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-    NSString *basePath = ([paths count] > 0) ? paths[0] : NSTemporaryDirectory();
-    NSFileManager *fileManager = [NSFileManager defaultManager];
     
-    // Previously the Peristent Story Directory was based on the Bundle Display Name but this can be Localized
-    // If Peristent Story Directory already exists we will use that
-    NSString *bundleDisplayName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
-    NSString *legacyPersistentStoreDirectory  = [basePath stringByAppendingPathComponent:bundleDisplayName];
-    if ([fileManager fileExistsAtPath:legacyPersistentStoreDirectory]) {
-        return legacyPersistentStoreDirectory;
-    }
-    
-    // Peristent Story Directory now uses the Bundle Identifier
-    NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
-    NSString *persistentStoreDirectory  = [basePath stringByAppendingPathComponent:bundleIdentifier];
-    if (![fileManager fileExistsAtPath:persistentStoreDirectory]) {
-        [fileManager createDirectoryAtPath:persistentStoreDirectory withIntermediateDirectories:YES attributes:nil error:nil];
-    }
-    return persistentStoreDirectory;
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        NSURL *groupPath = [fileManager containerURLForSecurityApplicationGroupIdentifier:@"group.2nets.ru.communityPush"];
+        NSString *basePath = groupPath.path;
+        
+        // Peristent Story Directory now uses the Bundle Identifier
+        NSString *bundleIdentifier = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
+        NSArray *bundleArray = [bundleIdentifier componentsSeparatedByString:@"."];
+        NSMutableString *smallBundleIdentifier = [[NSMutableString alloc] init];
+        int i;
+        for (i=0;i<=2;i++)
+        {
+            [smallBundleIdentifier appendString: bundleArray[i] ];
+        }
+        NSString *persistentStoreDirectory  = [basePath stringByAppendingPathComponent:smallBundleIdentifier];
+       // NSLog(@"APPGROUP store");
+       // NSLog(persistentStoreDirectory);
+        if (![fileManager fileExistsAtPath:persistentStoreDirectory]) {
+            [fileManager createDirectoryAtPath:persistentStoreDirectory withIntermediateDirectories:YES attributes:nil error:nil];
+        }
+        return persistentStoreDirectory;
 }
 
 - (NSManagedObjectModel *)managedObjectModel
