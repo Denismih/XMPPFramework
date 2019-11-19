@@ -472,7 +472,9 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
 			archivedMessage.isOutgoing = isOutgoing;
 			archivedMessage.isComposing = isComposing;
-			
+			//community custom properties
+            archivedMessage.messageID = message.elementID;
+            archivedMessage.status = @"received";
 			XMPPLogVerbose(@"New archivedMessage: %@", archivedMessage);
 														 
 			if (didCreateNewArchivedMessage) // [archivedMessage isInserted] doesn't seem to work

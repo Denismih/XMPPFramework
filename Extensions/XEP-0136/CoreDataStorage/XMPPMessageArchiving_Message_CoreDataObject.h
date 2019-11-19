@@ -30,7 +30,9 @@
 @property (nonatomic, strong) NSDate * timestamp;
 
 @property (nonatomic, strong) NSString * streamBareJidStr;
-
+//community custom
+@property (nonatomic, strong) NSString * messageID;
+@property (nonatomic, strong) NSString * status;
 /**
  * This method is called immediately before the object is inserted into the managedObjectContext.
  * At this point, all normal properties have been set.

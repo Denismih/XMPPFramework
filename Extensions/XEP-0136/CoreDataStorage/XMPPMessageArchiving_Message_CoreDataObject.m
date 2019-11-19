@@ -23,7 +23,8 @@
 @dynamic composing;
 @dynamic timestamp;
 @dynamic streamBareJidStr;
-
+@dynamic messageID;
+@dynamic status;
 #pragma mark Transient message
 
 - (XMPPMessage *)message
