@@ -27,6 +27,9 @@
 
 @property (nonatomic, assign) BOOL isFromMe;
 @property (nonatomic, strong) NSNumber * fromMe;
+//community custom property
+@property (nonatomic, retain) NSString * messageID;
+@property (nonatomic, retain) NSString * status;
 
 /**
  * The 'type' property can be used to inject event messages.

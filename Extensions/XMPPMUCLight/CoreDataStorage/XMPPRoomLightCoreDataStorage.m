@@ -82,7 +82,9 @@
 	roomMessage.remoteTimestamp = remoteTimestamp;
 	roomMessage.isFromMe = isOutgoing;
 	roomMessage.streamBareJidStr = streamBareJidStr;
-	
+	//community custom properties
+    roomMessage.status = @"new";
+    roomMessage.messageID = message.elementID;
 	[moc insertObject:roomMessage];
 	[self didInsertMessage:roomMessage];
 }

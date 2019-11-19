@@ -47,6 +47,9 @@
 @dynamic primitiveMessage;
 @dynamic primitiveMessageStr;
 
+@dynamic messageID;
+@dynamic status;
+
 #pragma mark Transient roomJID
 
 - (XMPPJID *)roomJID
