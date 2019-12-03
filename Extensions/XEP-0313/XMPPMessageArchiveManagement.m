@@ -223,12 +223,14 @@ static NSString *const QueryIdAttributeName = @"queryid";
     if (!forwarded) {
         return;
     }
-    NSString *queryID = [result attributeForName:QueryIdAttributeName].stringValue;
-    if (queryID.length && [self.outstandingQueryIds containsObject:queryID]) {
-        [multicastDelegate xmppMessageArchiveManagement:self didReceiveMAMMessage:message];
-    } else {
-        XMPPLogWarn(@"Received unexpected MAM response queryid %@", queryID);
-    }
+    //for Luntik queres
+    [multicastDelegate xmppMessageArchiveManagement:self didReceiveMAMMessage:message];
+//    NSString *queryID = [result attributeForName:QueryIdAttributeName].stringValue;
+//    if (queryID.length && [self.outstandingQueryIds containsObject:queryID]) {
+//        [multicastDelegate xmppMessageArchiveManagement:self didReceiveMAMMessage:message];
+//    } else {
+//        XMPPLogWarn(@"Received unexpected MAM response queryid %@", queryID);
+//    }
 }
 
 @end
