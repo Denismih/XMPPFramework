@@ -39,10 +39,10 @@
     NSPredicate *locationPredicate = [NSPredicate predicateWithFormat:@"jidStr = %@", senderFullJID];
 //    NSPredicate *preciseTimestampPredicate = [NSPredicate predicateWithFormat:@"remoteTimestamp = %@", remoteTimestamp];
 //    NSPredicate *approximateTimestampPredicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"remoteTimestamp = nil"],
-                                                                                                      [NSPredicate predicateWithFormat:@"localTimestamp BETWEEN {%@, %@}", minLocalTimestamp, maxLocalTimestamp]]];
+//                                                                                                      [NSPredicate predicateWithFormat:@"localTimestamp BETWEEN {%@, %@}", minLocalTimestamp, maxLocalTimestamp]]];
 //    NSPredicate *timestampPredicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[preciseTimestampPredicate, approximateTimestampPredicate]];
 //    NSPredicate *predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[contentPredicate, locationPredicate, timestampPredicate]];
-    NSPredicate *predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[IDPredicate, contentPredicate]];
+    NSPredicate *predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[IDPredicate, locationPredicate]];
     
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
     fetchRequest.entity = messageEntity;
