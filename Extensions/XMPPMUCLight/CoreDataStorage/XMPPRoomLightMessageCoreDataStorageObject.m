@@ -49,6 +49,7 @@
 
 @dynamic messageID;
 @dynamic status;
+@dynamic messageType;
 
 #pragma mark Transient roomJID
 

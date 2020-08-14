@@ -25,6 +25,8 @@
 @dynamic streamBareJidStr;
 @dynamic messageID;
 @dynamic status;
+@dynamic messageType;
+
 #pragma mark Transient message
 
 - (XMPPMessage *)message
