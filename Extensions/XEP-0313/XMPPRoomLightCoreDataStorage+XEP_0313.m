@@ -28,20 +28,21 @@
     NSManagedObjectContext *moc = [self managedObjectContext];
     NSEntityDescription *messageEntity = [self messageEntity:moc];
     
-    NSString *messageBody = [[message elementForName:@"body"] stringValue];
-    
+//    NSString *messageBody = [[message elementForName:@"body"] stringValue];
+    NSString *messageID =  [message elementID];
     NSString *senderFullJID = [[message from] full];
     
-    NSDate *minLocalTimestamp = [remoteTimestamp dateByAddingTimeInterval:-60];
-    NSDate *maxLocalTimestamp = [remoteTimestamp dateByAddingTimeInterval: 60];
-    
-    NSPredicate *contentPredicate = [NSPredicate predicateWithFormat:@"body = %@", messageBody];
+//    NSDate *minLocalTimestamp = [remoteTimestamp dateByAddingTimeInterval:-60];
+//    NSDate *maxLocalTimestamp = [remoteTimestamp dateByAddingTimeInterval: 60];
+    NSPredicate *IDPredicate = [NSPredicate predicateWithFormat:@"messageID = %@", messageID];
+//    NSPredicate *contentPredicate = [NSPredicate predicateWithFormat:@"body = %@", messageBody];
     NSPredicate *locationPredicate = [NSPredicate predicateWithFormat:@"jidStr = %@", senderFullJID];
-    NSPredicate *preciseTimestampPredicate = [NSPredicate predicateWithFormat:@"remoteTimestamp = %@", remoteTimestamp];
-    NSPredicate *approximateTimestampPredicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"remoteTimestamp = nil"],
-                                                                                                      [NSPredicate predicateWithFormat:@"localTimestamp BETWEEN {%@, %@}", minLocalTimestamp, maxLocalTimestamp]]];
-    NSPredicate *timestampPredicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[preciseTimestampPredicate, approximateTimestampPredicate]];
-    NSPredicate *predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[contentPredicate, locationPredicate, timestampPredicate]];
+//    NSPredicate *preciseTimestampPredicate = [NSPredicate predicateWithFormat:@"remoteTimestamp = %@", remoteTimestamp];
+//    NSPredicate *approximateTimestampPredicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"remoteTimestamp = nil"],
+//                                                                                                      [NSPredicate predicateWithFormat:@"localTimestamp BETWEEN {%@, %@}", minLocalTimestamp, maxLocalTimestamp]]];
+//    NSPredicate *timestampPredicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[preciseTimestampPredicate, approximateTimestampPredicate]];
+//    NSPredicate *predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[contentPredicate, locationPredicate, timestampPredicate]];
+    NSPredicate *predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[IDPredicate, locationPredicate]];
     
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
     fetchRequest.entity = messageEntity;
@@ -50,13 +51,13 @@
     
     NSArray *results = [moc executeFetchRequest:fetchRequest error:NULL];
     
-    if (messageBody.length == 0) {
-        // for non-body messages fall back to comparing <x> elements; this has to be done post-fetch as managed objects lack relevant attributes
-        results = [results filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
-            id<XMPPRoomMessage> evaluatedMessage = evaluatedObject;
-            return [[[evaluatedMessage message] xElementStringsDictionary] isEqualToDictionary:[message xElementStringsDictionary]];
-        }]];
-    }
+//    if (messageBody.length == 0) {
+//        // for non-body messages fall back to comparing <x> elements; this has to be done post-fetch as managed objects lack relevant attributes
+//        results = [results filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id  _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
+//            id<XMPPRoomMessage> evaluatedMessage = evaluatedObject;
+//            return [[[evaluatedMessage message] xElementStringsDictionary] isEqualToDictionary:[message xElementStringsDictionary]];
+//        }]];
+//    }
     
     return results && results.count == 0;
 }
