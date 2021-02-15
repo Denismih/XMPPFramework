@@ -19,7 +19,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_INFO | XMPP_LOG_FLAG_SEND_RECV; /
 static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #endif
 
-NSString *const XMPPHTTPFileUploadNamespace = @"urn:xmpp:http:upload";
+NSString *const XMPPHTTPFileUploadNamespace = @"urn:xmpp:http:upload:0";
 NSString *const XMPPHTTPFileUploadErrorDomain = @"XMPPHTTPFileUploadErrorDomain";
 
 NSString* StringForXMPPHTTPFileUploadErrorCode(XMPPHTTPFileUploadErrorCode errorCode) {
@@ -141,12 +141,19 @@ static NSError *ErrorForCode(XMPPHTTPFileUploadErrorCode errorCode) {
 
 		XMPPElement *request = [XMPPElement elementWithName:@"request"];
 		[request setXmlns:XMPPHTTPFileUploadNamespace];
+//        if (filename) {
+//            [request addChild:[XMPPElement elementWithName:@"filename" stringValue:filename]];
+//        }
+//		[request addChild:[XMPPElement elementWithName:@"size" numberValue:[NSNumber numberWithUnsignedInteger:size]]];
+//        if (contentType) {
+//            [request addChild:[XMPPElement elementWithName:@"content-type" stringValue:contentType]];
+//        }
         if (filename) {
-            [request addChild:[XMPPElement elementWithName:@"filename" stringValue:filename]];
+            [request addAttributeWithName:@"filename" stringValue:filename];
         }
-		[request addChild:[XMPPElement elementWithName:@"size" numberValue:[NSNumber numberWithUnsignedInteger:size]]];
+        [request addAttributeWithName:@"size" numberValue:[NSNumber numberWithUnsignedInteger:size]];
         if (contentType) {
-            [request addChild:[XMPPElement elementWithName:@"content-type" stringValue:contentType]];
+            [request addAttributeWithName:@"content-type" stringValue:contentType];
         }
 		
 		[iq addChild:request];
