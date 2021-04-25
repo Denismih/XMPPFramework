@@ -26,17 +26,34 @@
 - (void)handleIncomingMessage:(XMPPMessage *)message room:(XMPPRoomLight *)room{
 	XMPPStream *xmppStream = room.xmppStream;
 	
-	XMPPJID *roomFromUser = [XMPPJID jidWithString:[message from].resource];
-	XMPPJID *myUser = [room.xmppStream myJID];
-	
-	if([roomFromUser isEqualToJID:myUser options:XMPPJIDCompareBare]) {
-		// room is broadcasting back a message that has already been handled as outgoing
-        return;
-	}
-
-	[self scheduleBlock:^{
+    XMPPJID *roomFromUser = [XMPPJID jidWithString:[message from].resource];
+    XMPPJID *myUser = [room.xmppStream myJID];
+    
+    if([roomFromUser isEqualToJID:myUser options:XMPPJIDCompareBare]) {
+        // check broadcasting back a message is it from us or other client
+        __block BOOL isUnique;
+        [self executeBlock:^{
+            isUnique = [self isMessageUnique:message outgoing:NO];
+        }];
+        
+        if (isUnique) {
+            [self scheduleBlock:^{
+                [self insertMessage:message outgoing:YES remoteTimestamp:nil forRoom:room stream:xmppStream];
+            }];
+            return;
+        } else {
+            return;
+        }
+    }
+    
+    [self scheduleBlock:^{
         [self insertMessage:message outgoing:NO remoteTimestamp:nil forRoom:room stream:xmppStream];
-	}];
+    }];
+}
+
+[self scheduleBlock:^{
+    [self insertMessage:message outgoing:NO remoteTimestamp:nil forRoom:room stream:xmppStream];
+}];
 }
 
 - (void)handleOutgoingMessage:(XMPPMessage *)message room:(XMPPRoomLight *)room{
@@ -119,6 +136,26 @@
 		dispatch_sync(storageQueue, block);
 	
 	return result;
+}
+
+// TODO: XEP-0359 for more robust uniquing
+- (BOOL)isMessageUnique:(XMPPMessage *)message outgoing:(BOOL)isOutgoing
+{
+    NSManagedObjectContext *moc = [self managedObjectContext];
+    NSEntityDescription *messageEntity = [self messageEntity:moc];
+    
+    NSString *messageID =  [message elementID];
+   
+    NSPredicate *predicate =
+    [NSCompoundPredicate andPredicateWithSubpredicates:@[[NSPredicate predicateWithFormat:@"messageID = %@", messageID]]];
+    
+    NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+    fetchRequest.entity = messageEntity;
+    fetchRequest.predicate = predicate;
+    
+    NSArray *results = [moc executeFetchRequest:fetchRequest error:NULL];
+
+    return (results && results.count == 0) ;
 }
 
 @end
