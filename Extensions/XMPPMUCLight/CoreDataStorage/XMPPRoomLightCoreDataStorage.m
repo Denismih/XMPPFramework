@@ -51,11 +51,6 @@
     }];
 }
 
-[self scheduleBlock:^{
-    [self insertMessage:message outgoing:NO remoteTimestamp:nil forRoom:room stream:xmppStream];
-}];
-}
-
 - (void)handleOutgoingMessage:(XMPPMessage *)message room:(XMPPRoomLight *)room{
 	XMPPStream *xmppStream = room.xmppStream;
 
