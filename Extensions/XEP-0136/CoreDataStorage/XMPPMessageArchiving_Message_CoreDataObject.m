@@ -26,7 +26,7 @@
 @dynamic messageID;
 @dynamic status;
 @dynamic messageType;
-
+@dynamic isDecrypted;
 #pragma mark Transient message
 
 - (XMPPMessage *)message

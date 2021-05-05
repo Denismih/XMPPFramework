@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="15702" systemVersion="19G73" minimumToolsVersion="Xcode 7.0" sourceLanguage="Objective-C" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="18154" systemVersion="20D91" minimumToolsVersion="Xcode 7.0" sourceLanguage="Objective-C" userDefinedModelVersionIdentifier="">
     <entity name="XMPPRoomLightMessageCoreDataStorageObject" representedClassName="XMPPRoomLightMessageCoreDataStorageObject" syncable="YES">
         <attribute name="body" optional="YES" attributeType="String" indexed="YES" syncable="YES"/>
         <attribute name="fromMe" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO" syncable="YES"/>
+        <attribute name="isDecrypted" optional="YES" attributeType="Boolean" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="jid" optional="YES" transient="YES" syncable="YES"/>
         <attribute name="jidStr" attributeType="String" indexed="YES" syncable="YES"/>
         <attribute name="localTimestamp" attributeType="Date" usesScalarValueType="NO" indexed="YES" syncable="YES"/>
@@ -19,6 +20,6 @@
         <attribute name="type" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="NO" syncable="YES"/>
     </entity>
     <elements>
-        <element name="XMPPRoomLightMessageCoreDataStorageObject" positionX="-63" positionY="-18" width="128" height="283"/>
+        <element name="XMPPRoomLightMessageCoreDataStorageObject" positionX="-63" positionY="-18" width="128" height="284"/>
     </elements>
 </model>

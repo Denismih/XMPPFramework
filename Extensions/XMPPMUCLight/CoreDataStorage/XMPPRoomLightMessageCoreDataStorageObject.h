@@ -31,6 +31,7 @@
 @property (nonatomic, retain) NSString * messageID;
 @property (nonatomic, retain) NSString * status;
 @property (nonatomic, retain) NSString * messageType;
+@property (nonatomic, retain) BOOL * isDecrypted;
 /**
  * The 'type' property can be used to inject event messages.
  * For example: "JohnDoe entered the room".
