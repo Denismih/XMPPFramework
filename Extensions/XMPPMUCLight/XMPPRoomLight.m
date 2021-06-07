@@ -723,7 +723,7 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 	BOOL destroyRoom = [message elementsForLocalName:@"x" URI:XMPPRoomLightDestroy].count > 0;
 	BOOL changeConfiguration = [message elementsForLocalName:@"x" URI:XMPPRoomLightConfiguration].count > 0;;
     BOOL changeAffiliantions = [message elementsForLocalName:@"x" URI:XMPPRoomLightAffiliations].count > 0;;
-    
+    BOOL forwarded = [message elementsForLocalName:@"forwarded" URI:@"urn:xmpp:forward:0"].count > 0;
 	// Is this a message we need to store (a chat message)?
 	//
 	// We store messages that from is full room-id@domain/user-who-sends-message
@@ -741,9 +741,12 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 		[multicastDelegate xmppRoomLight:self configurationChanged:message];
     } else if (changeAffiliantions && self.shouldStoreAffiliationChangeMessages) {
         [xmppRoomLightStorage handleIncomingMessage:message room:self];
-	}else{
-		// Todo... Handle other types of messages.
-	}
+	} else if (forwarded) {
+        [xmppRoomLightStorage handleIncomingMessage:message room:self];
+        [multicastDelegate xmppRoomLight:self didReceiveMessage:message];
+    } else{
+        // Todo... Handle other types of messages.
+    }
 }
 
 - (void)xmppStream:(XMPPStream *)sender didSendMessage:(XMPPMessage *)message
